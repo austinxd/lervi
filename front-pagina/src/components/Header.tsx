@@ -64,7 +64,7 @@ export default function Header({ propertyName, logo, template = "signature", slu
   };
 
   const hamburgerColor = template === "essential" ? "text-gray-700" : "text-white";
-  const reservasHref = guestName ? `/${slug || ""}/mis-reservas` : `/${slug || ""}/iniciar-sesion`;
+  const reservasHref = guestName ? "/mis-reservas" : "/iniciar-sesion";
 
   return (
     <header className={`${styles.header} sticky top-0 z-50`}>
