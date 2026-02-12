@@ -2,12 +2,12 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  Divider, Grid, IconButton, MenuItem, TextField, Typography,
+  Divider, Grid, IconButton, TextField, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import {
   useGetPropertiesQuery,
@@ -16,13 +16,7 @@ import {
   useUploadPropertyLogoMutation,
 } from '../../services/organizationService';
 import DataTable, { Column } from '../../components/DataTable';
-import type { Property, ThemeTemplate } from '../../interfaces/types';
-
-const TEMPLATE_OPTIONS = [
-  { value: 'essential', label: 'Essential — Boutique, limpio y directo' },
-  { value: 'signature', label: 'Signature — Experiencia inmersiva' },
-  { value: 'premium', label: 'Premium — Lujo silencioso, editorial' },
-];
+import type { Property } from '../../interfaces/types';
 
 interface FormData {
   name: string;
@@ -34,9 +28,6 @@ interface FormData {
   check_out_time: string;
   contact_phone: string;
   contact_email: string;
-  theme_template: ThemeTemplate;
-  theme_primary_color: string;
-  theme_accent_color: string;
 }
 
 export default function PropertySettings() {
@@ -55,10 +46,10 @@ export default function PropertySettings() {
   const [update] = useUpdatePropertyMutation();
   const [uploadLogo] = useUploadPropertyLogoMutation();
 
-  const { register, handleSubmit, reset, control } = useForm<FormData>();
+  const { register, handleSubmit, reset } = useForm<FormData>();
 
   const openCreate = () => {
-    reset({ theme_template: 'signature', theme_primary_color: '#0f1f33', theme_accent_color: '#c9a96e' });
+    reset({});
     setEditId(null);
     setCurrentLogo('');
     setLogoFile(null);
@@ -123,7 +114,6 @@ export default function PropertySettings() {
     },
     { id: 'slug', label: 'Slug', render: (r) => r.slug },
     { id: 'city', label: 'Ciudad', render: (r) => r.city || '—' },
-    { id: 'theme', label: 'Tema', render: (r) => `${r.theme_template} / ${r.theme_palette}` },
     { id: 'active', label: 'Activa', render: (r) => r.is_active ? 'Sí' : 'No' },
     {
       id: 'actions', label: '', render: (r) => (
@@ -199,61 +189,6 @@ export default function PropertySettings() {
                 </Box>
               </Grid>
 
-              {/* Theme */}
-              <Grid item xs={12}>
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary" mb={1}>Tema visual</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="theme_template"
-                  control={control}
-                  defaultValue="signature"
-                  render={({ field }) => (
-                    <TextField {...field} select label="Plantilla" fullWidth>
-                      {TEMPLATE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                      ))}
-                    </TextField>
-                  )}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color primario</Typography>
-                <Box display="flex" gap={1} alignItems="center">
-                  <input
-                    type="color"
-                    {...register('theme_primary_color')}
-                    defaultValue="#0f1f33"
-                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
-                  />
-                  <TextField
-                    {...register('theme_primary_color')}
-                    size="small"
-                    placeholder="#0f1f33"
-                    fullWidth
-                    helperText="Fondos oscuros, textos, header"
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color acento</Typography>
-                <Box display="flex" gap={1} alignItems="center">
-                  <input
-                    type="color"
-                    {...register('theme_accent_color')}
-                    defaultValue="#c9a96e"
-                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
-                  />
-                  <TextField
-                    {...register('theme_accent_color')}
-                    size="small"
-                    placeholder="#c9a96e"
-                    fullWidth
-                    helperText="Botones, enlaces, acentos"
-                  />
-                </Box>
-              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>

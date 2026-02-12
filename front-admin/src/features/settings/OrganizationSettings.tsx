@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, CardContent, Grid, TextField, Typography } from '@mui/material';
-import { useForm } from 'react-hook-form';
+import { Box, Button, Card, CardContent, Divider, Grid, MenuItem, TextField, Typography } from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { useGetOrganizationQuery, useUpdateOrganizationMutation } from '../../services/organizationService';
 import type { Organization } from '../../interfaces/types';
@@ -12,7 +12,7 @@ export default function OrganizationSettings() {
   const { data: org } = useGetOrganizationQuery();
   const [updateOrg, { isLoading }] = useUpdateOrganizationMutation();
 
-  const { register, handleSubmit, reset } = useForm<Partial<Organization>>();
+  const { register, handleSubmit, reset, control } = useForm<Partial<Organization>>();
 
   useEffect(() => {
     if (org) reset(org);
@@ -51,6 +51,63 @@ export default function OrganizationSettings() {
               <Grid item xs={12} sm={4}><TextField {...register('font')} label="Fuente" fullWidth /></Grid>
               <Grid item xs={12} sm={6}><TextField {...register('subdomain')} label="Subdominio" fullWidth disabled /></Grid>
               <Grid item xs={12} sm={6}><TextField {...register('custom_domain')} label="Dominio custom" fullWidth /></Grid>
+              <Grid item xs={12} sm={6}><TextField {...register('website_url')} label="URL del sitio web" fullWidth /></Grid>
+
+              {/* Theme */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="subtitle2" color="text.secondary" mb={1}>Tema de la web pública</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Controller
+                  name="theme_template"
+                  control={control}
+                  defaultValue="signature"
+                  render={({ field }) => (
+                    <TextField {...field} select label="Plantilla" fullWidth>
+                      <MenuItem value="essential">Essential — Boutique, limpio y directo</MenuItem>
+                      <MenuItem value="signature">Signature — Experiencia inmersiva</MenuItem>
+                      <MenuItem value="premium">Premium — Lujo silencioso, editorial</MenuItem>
+                    </TextField>
+                  )}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color primario</Typography>
+                <Box display="flex" gap={1} alignItems="center">
+                  <input
+                    type="color"
+                    {...register('theme_primary_color')}
+                    defaultValue="#0f1f33"
+                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
+                  />
+                  <TextField
+                    {...register('theme_primary_color')}
+                    size="small"
+                    placeholder="#0f1f33"
+                    fullWidth
+                    helperText="Fondos oscuros, textos, header"
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color acento</Typography>
+                <Box display="flex" gap={1} alignItems="center">
+                  <input
+                    type="color"
+                    {...register('theme_accent_color')}
+                    defaultValue="#c9a96e"
+                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
+                  />
+                  <TextField
+                    {...register('theme_accent_color')}
+                    size="small"
+                    placeholder="#c9a96e"
+                    fullWidth
+                    helperText="Botones, enlaces, acentos"
+                  />
+                </Box>
+              </Grid>
             </Grid>
             <Box mt={3}>
               <Button type="submit" variant="contained" disabled={isLoading}>Guardar</Button>

@@ -45,6 +45,8 @@ export interface UserCreate {
 }
 
 // ---- Organization ----
+export type ThemeTemplate = 'essential' | 'signature' | 'premium';
+
 export interface Organization {
   id: string;
   name: string;
@@ -59,6 +61,12 @@ export interface Organization {
   font: string;
   subdomain: string;
   custom_domain: string;
+  theme_template: ThemeTemplate;
+  theme_palette: string;
+  theme_primary_color: string;
+  theme_accent_color: string;
+  website_url: string;
+  social_links: Record<string, string>;
   plan: string;
   is_active: boolean;
   created_at: string;
@@ -66,8 +74,6 @@ export interface Organization {
 }
 
 // ---- Property ----
-export type ThemeTemplate = 'essential' | 'signature' | 'premium';
-
 export interface Property {
   id: string;
   organization: string;
@@ -85,10 +91,6 @@ export interface Property {
   contact_email: string;
   is_active: boolean;
   logo: string;
-  theme_template: ThemeTemplate;
-  theme_palette: string;
-  theme_primary_color: string;
-  theme_accent_color: string;
   created_at: string;
   updated_at: string;
 }
