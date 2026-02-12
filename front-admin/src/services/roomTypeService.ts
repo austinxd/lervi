@@ -23,8 +23,11 @@ export const roomTypeApi = createApi({
       query: ({ id, data }) => ({ url: `/room-types/${id}/`, method: 'PATCH', data }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'RoomType', id }],
     }),
-    deleteRoomType: builder.mutation<void, string>({
-      query: (id) => ({ url: `/room-types/${id}/`, method: 'DELETE' }),
+    deleteRoomType: builder.mutation<void, { id: string; reassignTo?: string }>({
+      query: ({ id, reassignTo }) => ({
+        url: `/room-types/${id}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
+        method: 'DELETE',
+      }),
       invalidatesTags: ['RoomType'],
     }),
     // Bed configurations

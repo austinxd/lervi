@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Typography } from '@mui/material';
+import {
+  Box, Button, Dialog, DialogActions, DialogContent,
+  DialogContentText, DialogTitle, MenuItem, TextField, Typography,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useSnackbar } from 'notistack';
 import { useAppSelector } from '../../store/hooks';
@@ -19,7 +22,13 @@ export default function RoomTypeList() {
   const { enqueueSnackbar } = useSnackbar();
   const propertyId = useAppSelector((s) => s.auth.activePropertyId);
   const [page, setPage] = useState(0);
+
+  // Delete flow
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  // Reassign flow (shown when room type has reservations)
+  const [reassignFrom, setReassignFrom] = useState<string | null>(null);
+  const [reassignTo, setReassignTo] = useState('');
+  const [reservationCount, setReservationCount] = useState(0);
 
   const { data } = useGetRoomTypesQuery({
     property: propertyId ?? undefined,
@@ -29,16 +38,36 @@ export default function RoomTypeList() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    setDeleteId(null);
     try {
-      await deleteRoomType(deleteId).unwrap();
+      await deleteRoomType({ id: deleteId }).unwrap();
       enqueueSnackbar('Tipo de habitación eliminado', { variant: 'success' });
-      setDeleteId(null);
     } catch (err: unknown) {
-      const detail = (err as { data?: { detail?: string } })?.data?.detail;
-      enqueueSnackbar(detail || 'Error al eliminar', { variant: 'error' });
-      setDeleteId(null);
+      const errData = (err as { data?: { detail?: string; reservation_count?: number } })?.data;
+      if (errData?.reservation_count) {
+        // Has reservations — show reassign dialog
+        setReassignFrom(deleteId);
+        setReservationCount(errData.reservation_count);
+        setReassignTo('');
+      } else {
+        enqueueSnackbar(errData?.detail || 'Error al eliminar', { variant: 'error' });
+      }
     }
   };
+
+  const handleReassignAndDelete = async () => {
+    if (!reassignFrom || !reassignTo) return;
+    try {
+      await deleteRoomType({ id: reassignFrom, reassignTo }).unwrap();
+      enqueueSnackbar('Reservas reasignadas y tipo eliminado', { variant: 'success' });
+      setReassignFrom(null);
+    } catch (err: unknown) {
+      const detail = (err as { data?: { detail?: string } })?.data?.detail;
+      enqueueSnackbar(detail || 'Error al reasignar', { variant: 'error' });
+    }
+  };
+
+  const otherRoomTypes = (data?.results ?? []).filter((rt) => rt.id !== reassignFrom);
 
   const columns: Column<RoomType>[] = [
     { id: 'name', label: 'Nombre', render: (r) => r.name },
@@ -77,6 +106,8 @@ export default function RoomTypeList() {
         rowKey={(r) => r.id}
         onRowClick={(r) => navigate(`/room-types/${r.id}/edit`)}
       />
+
+      {/* Step 1: Simple confirm */}
       <ConfirmDialog
         open={!!deleteId}
         title="Eliminar tipo de habitación"
@@ -85,6 +116,40 @@ export default function RoomTypeList() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
+
+      {/* Step 2: Reassign dialog (when room type has reservations) */}
+      <Dialog open={!!reassignFrom} onClose={() => setReassignFrom(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Reasignar reservas</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Este tipo tiene {reservationCount} reserva{reservationCount !== 1 ? 's' : ''} asociada{reservationCount !== 1 ? 's' : ''}. Seleccione a qué tipo de habitación reasignarlas antes de eliminar.
+          </DialogContentText>
+          <TextField
+            select
+            fullWidth
+            label="Reasignar a"
+            value={reassignTo}
+            onChange={(e) => setReassignTo(e.target.value)}
+          >
+            {otherRoomTypes.map((rt) => (
+              <MenuItem key={rt.id} value={rt.id}>
+                {rt.name} — {formatCurrency(rt.base_price)}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReassignFrom(null)}>Cancelar</Button>
+          <Button
+            onClick={handleReassignAndDelete}
+            variant="contained"
+            color="error"
+            disabled={!reassignTo}
+          >
+            Reasignar y eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

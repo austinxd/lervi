@@ -52,12 +52,26 @@ class RoomTypeViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
+        from apps.reservations.models import Reservation
+
         instance = self.get_object()
+        reassign_to_id = request.query_params.get("reassign_to")
+
+        if reassign_to_id:
+            reassign_to = get_object_or_404(
+                RoomType, pk=reassign_to_id, property=instance.property,
+            )
+            Reservation.objects.filter(room_type=instance).update(room_type=reassign_to)
+
         try:
             instance.delete()
         except ProtectedError:
+            reservation_count = Reservation.objects.filter(room_type=instance).count()
             return Response(
-                {"detail": "No se puede eliminar este tipo de habitación porque tiene reservas asociadas."},
+                {
+                    "detail": "Este tipo de habitación tiene reservas asociadas. Seleccione a cuál tipo reasignarlas.",
+                    "reservation_count": reservation_count,
+                },
                 status=status.HTTP_409_CONFLICT,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
