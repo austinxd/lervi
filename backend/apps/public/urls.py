@@ -1,0 +1,66 @@
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path(
+        "resolve-domain/",
+        views.ResolveDomainView.as_view(),
+        name="public-resolve-domain",
+    ),
+    path(
+        "<slug:property_slug>/info/",
+        views.PropertyInfoView.as_view(),
+        name="public-property-info",
+    ),
+    path(
+        "<slug:property_slug>/room-types/",
+        views.RoomTypeListView.as_view(),
+        name="public-room-types",
+    ),
+    path(
+        "<slug:property_slug>/room-types/<uuid:room_type_id>/",
+        views.RoomTypeDetailView.as_view(),
+        name="public-room-type-detail",
+    ),
+    path(
+        "<slug:property_slug>/availability/",
+        views.AvailabilityView.as_view(),
+        name="public-availability",
+    ),
+    path(
+        "<slug:property_slug>/reservations/",
+        views.CreateReservationView.as_view(),
+        name="public-create-reservation",
+    ),
+    path(
+        "<slug:property_slug>/reservations/<str:confirmation_code>/",
+        views.ReservationLookupView.as_view(),
+        name="public-reservation-lookup",
+    ),
+    path(
+        "<slug:property_slug>/bank-accounts/",
+        views.BankAccountListView.as_view(),
+        name="public-bank-accounts",
+    ),
+    path(
+        "<slug:property_slug>/reservations/<str:confirmation_code>/voucher/",
+        views.VoucherUploadView.as_view(),
+        name="public-voucher-upload",
+    ),
+    path(
+        "<slug:property_slug>/guest-login/",
+        views.GuestLoginView.as_view(),
+        name="public-guest-login",
+    ),
+    path(
+        "<slug:property_slug>/mis-reservas/",
+        views.GuestReservationsView.as_view(),
+        name="public-guest-reservations",
+    ),
+    path(
+        "<slug:property_slug>/reservations/<str:confirmation_code>/cancel/",
+        views.GuestCancelReservationView.as_view(),
+        name="public-guest-cancel-reservation",
+    ),
+]

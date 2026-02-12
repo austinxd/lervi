@@ -1,0 +1,42 @@
+# ==========================================
+# Lervi — Monorepo .gitignore
+# ==========================================
+
+# ---------- Python / Django (backend/) ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+*.log
+db.sqlite3
+staticfiles/
+media/
+
+# ---------- Node / React (front-admin/, front-pagina/) ----------
+node_modules/
+dist/
+.next/
+.vite/
+*.tsbuildinfo
+
+# ---------- Environment ----------
+.env
+*.env.local
+.env.*.local
+
+# ---------- Virtual environments ----------
+venv/
+.venv/
+env/
+
+# ---------- IDE ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

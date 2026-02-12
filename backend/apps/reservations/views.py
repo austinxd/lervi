@@ -1,0 +1,264 @@
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.shortcuts import get_object_or_404
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from apps.automations.dispatcher import dispatch_event
+from apps.common.mixins import TenantQuerySetMixin
+from apps.common.permissions import HasRolePermission
+from apps.rooms.constants import room_state_machine
+from apps.rooms.models import Room
+
+from .constants import financial_state_machine, operational_state_machine
+from .models import Payment, Reservation
+from .serializers import (
+    CheckInSerializer,
+    PaymentSerializer,
+    RefundSerializer,
+    ReservationCreateSerializer,
+    ReservationDetailSerializer,
+    ReservationListSerializer,
+)
+
+
+class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
+    queryset = Reservation.objects.select_related(
+        "guest", "property", "room_type", "room",
+    )
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    search_fields = ["confirmation_code", "guest__first_name", "guest__last_name"]
+    filterset_fields = ["operational_status", "financial_status", "property", "origin_type"]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ReservationListSerializer
+        if self.action == "create":
+            return ReservationCreateSerializer
+        return ReservationDetailSerializer
+
+    def get_permissions(self):
+        if self.action in ("create", "partial_update"):
+            self.required_role = "reception"
+            self.permission_classes = [HasRolePermission]
+        return super().get_permissions()
+
+    def _build_context(self, request, reservation):
+        return {
+            "reservation": reservation,
+            "room": reservation.room,
+            "guest": reservation.guest,
+            "property": reservation.property,
+            "user": request.user,
+        }
+
+    # ---------- Confirm ----------
+    @action(detail=True, methods=["post"], url_path="confirm")
+    def confirm(self, request, pk=None):
+        reservation = self.get_object()
+        try:
+            operational_state_machine.transition(
+                reservation, "operational_status", "confirmed", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        dispatch_event("reservation.confirmed", reservation.organization, self._build_context(request, reservation))
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Check-in ----------
+    @action(detail=True, methods=["post"], url_path="check-in")
+    def check_in(self, request, pk=None):
+        reservation = self.get_object()
+        serializer = CheckInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Assign room if provided
+        room_id = serializer.validated_data.get("room_id")
+        if room_id:
+            room = get_object_or_404(
+                Room,
+                pk=room_id,
+                property=reservation.property,
+            )
+            reservation.room = room
+            reservation.save(update_fields=["room", "updated_at"])
+
+        if not reservation.room:
+            return Response(
+                {"detail": "Debe asignar una habitación antes del check-in."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate room is available
+        if reservation.room.status != "available":
+            return Response(
+                {"detail": f"La habitación {reservation.room.number} no está disponible (estado: {reservation.room.status})."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Transition reservation: confirmed → check_in
+        try:
+            operational_state_machine.transition(
+                reservation, "operational_status", "check_in", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Transition room: available → occupied
+        try:
+            room_state_machine.transition(
+                reservation.room, "status", "occupied", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        dispatch_event("reservation.check_in", reservation.organization, self._build_context(request, reservation))
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Check-out ----------
+    @action(detail=True, methods=["post"], url_path="check-out")
+    def check_out(self, request, pk=None):
+        reservation = self.get_object()
+
+        # Transition reservation: check_in → check_out
+        try:
+            operational_state_machine.transition(
+                reservation, "operational_status", "check_out", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Automation rules handle: room → dirty + create cleaning task
+        dispatch_event("reservation.check_out", reservation.organization, self._build_context(request, reservation))
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Cancel ----------
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel(self, request, pk=None):
+        reservation = self.get_object()
+        try:
+            operational_state_machine.transition(
+                reservation, "operational_status", "cancelled", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        dispatch_event("reservation.cancelled", reservation.organization, self._build_context(request, reservation))
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- No-show ----------
+    @action(detail=True, methods=["post"], url_path="no-show")
+    def no_show(self, request, pk=None):
+        reservation = self.get_object()
+        try:
+            operational_state_machine.transition(
+                reservation, "operational_status", "no_show", user=request.user,
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Automation rules handle: free room if assigned
+        dispatch_event("reservation.no_show", reservation.organization, self._build_context(request, reservation))
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Payments (nested) ----------
+    @action(detail=True, methods=["get", "post"], url_path="payments")
+    def payments(self, request, pk=None):
+        reservation = self.get_object()
+
+        if request.method == "GET":
+            payments = reservation.payments.all()
+            serializer = PaymentSerializer(payments, many=True)
+            return Response(serializer.data)
+
+        serializer = PaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment = serializer.save(
+            reservation=reservation,
+            organization=request.organization,
+            created_by=request.user,
+        )
+
+        # Recalculate financial status
+        if payment.status == "completed":
+            self._update_financial_status(reservation, request.user)
+
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path="payments/(?P<payment_id>[^/.]+)/refund")
+    def refund_payment(self, request, pk=None, payment_id=None):
+        reservation = self.get_object()
+        payment = get_object_or_404(reservation.payments, pk=payment_id)
+
+        if payment.status != "completed":
+            return Response(
+                {"detail": "Solo se pueden reembolsar pagos completados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RefundSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refund_amount = serializer.validated_data["amount"]
+        if refund_amount > payment.amount:
+            return Response(
+                {"detail": "El monto del reembolso no puede exceder el pago original."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment.status = "refunded"
+        payment.save(update_fields=["status", "updated_at"])
+
+        # Create refund record
+        Payment.objects.create(
+            reservation=reservation,
+            organization=request.organization,
+            created_by=request.user,
+            amount=-refund_amount,
+            currency=payment.currency,
+            method=payment.method,
+            status="completed",
+            notes=serializer.validated_data.get("notes", ""),
+        )
+
+        self._update_financial_status(reservation, request.user)
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    def _update_financial_status(self, reservation, user):
+        """Recalculate financial status based on completed payments."""
+        total_paid = sum(
+            p.amount for p in reservation.payments.filter(status="completed")
+        )
+        total_required = reservation.total_amount
+
+        if total_paid <= Decimal("0"):
+            new_status = "pending_payment"
+        elif total_paid < total_required:
+            new_status = "partial"
+        elif total_paid >= total_required:
+            new_status = "paid"
+        else:
+            return
+
+        current = reservation.financial_status
+        if current == new_status:
+            return
+
+        # Handle refund states
+        if total_paid < Decimal("0"):
+            new_status = "refunded"
+        elif current in ("paid",) and total_paid < total_required:
+            new_status = "partial_refund"
+
+        if current != new_status:
+            try:
+                financial_state_machine.transition(
+                    reservation, "financial_status", new_status, user=user,
+                )
+            except DjangoValidationError:
+                # Force update if state machine doesn't allow (edge cases)
+                reservation.financial_status = new_status
+                reservation.save(update_fields=["financial_status", "updated_at"])
