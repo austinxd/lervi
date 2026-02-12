@@ -1,34 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { searchAvailability, createReservation } from "@/lib/api";
-import PriceBreakdown from "@/components/PriceBreakdown";
-import type {
-  AvailabilityResult,
-  ReservationConfirmation,
-} from "@/lib/types";
+import { createGroupReservation } from "@/lib/api";
+import type { GroupReservationConfirmation } from "@/lib/types";
+
+interface CombinationData {
+  rooms: {
+    room_type_id: string;
+    room_type_name: string;
+    cover_photo: string | null;
+    quantity: number;
+    adults_per_room: number;
+    children_per_room: number;
+    subtotal: string;
+  }[];
+  total: string;
+  check_in: string;
+  check_out: string;
+}
 
 interface Props {
   slug: string;
 }
 
-export default function BookingClient({ slug }: Props) {
+export default function GroupBookingClient({ slug }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const roomTypeId = searchParams.get("room_type") || "";
-  const checkIn = searchParams.get("check_in") || "";
-  const checkOut = searchParams.get("check_out") || "";
-  const adults = Number(searchParams.get("adults") || 1);
-  const children = Number(searchParams.get("children") || 0);
-
-  const [availability, setAvailability] =
-    useState<AvailabilityResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [combo, setCombo] = useState<CombinationData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] =
-    useState<ReservationConfirmation | null>(null);
+    useState<GroupReservationConfirmation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
@@ -40,44 +42,43 @@ export default function BookingClient({ slug }: Props) {
   const [specialRequests, setSpecialRequests] = useState("");
 
   useEffect(() => {
-    if (roomTypeId && checkIn && checkOut) {
-      searchAvailability(slug, checkIn, checkOut, adults, children)
-        .then((data) => {
-          const match = data.results.find((r) => r.room_type.id === roomTypeId);
-          setAvailability(match || null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    const stored = sessionStorage.getItem("group_combination");
+    if (stored) {
+      setCombo(JSON.parse(stored));
     }
-  }, [slug, roomTypeId, checkIn, checkOut, adults, children]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!combo) return;
     setSubmitting(true);
     setError(null);
     try {
-      const result = await createReservation(slug, {
+      // Expand rooms with quantity > 1 into separate items
+      const rooms = combo.rooms.flatMap((r) =>
+        Array.from({ length: r.quantity }, () => ({
+          room_type_id: r.room_type_id,
+          adults: r.adults_per_room,
+          children: r.children_per_room,
+        }))
+      );
+
+      const result = await createGroupReservation(slug, {
         first_name: firstName,
         last_name: lastName,
         email,
         phone,
         document_type: documentType,
         document_number: documentNumber,
-        room_type_id: roomTypeId,
-        check_in_date: checkIn,
-        check_out_date: checkOut,
-        adults,
-        children,
+        check_in_date: combo.check_in,
+        check_out_date: combo.check_out,
+        rooms,
         special_requests: specialRequests,
       });
-      if (result.has_bank_accounts) {
-        router.push(`/${slug}/reservar/pago?code=${result.confirmation_code}`);
-        return;
-      }
       setConfirmation(result);
+      sessionStorage.removeItem("group_combination");
     } catch {
-      setError("No se pudo completar la reserva. Intente nuevamente.");
+      setError("No se pudo completar la reserva grupal. Intente nuevamente.");
     } finally {
       setSubmitting(false);
     }
@@ -108,7 +109,7 @@ export default function BookingClient({ slug }: Props) {
               Confirmacion
             </p>
             <h1 className="font-serif text-4xl sm:text-5xl text-white">
-              Reserva Exitosa
+              Reserva Grupal Exitosa
             </h1>
           </div>
         </div>
@@ -116,51 +117,50 @@ export default function BookingClient({ slug }: Props) {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-16">
           <div className="bg-white rounded-lg shadow-sm border border-sand-200 p-8">
             <p className="text-gray-500 font-sans text-center mb-8">
-              Su reserva ha sido registrada exitosamente.
-              Recibira un email de confirmacion.
+              Su reserva grupal ha sido registrada exitosamente.
             </p>
 
             <div className="space-y-4">
               <div className="flex justify-between py-3 border-b border-sand-100">
                 <span className="text-sm text-gray-400 font-sans uppercase tracking-wider">
-                  Codigo
+                  Codigo de grupo
                 </span>
                 <span className="font-serif text-xl text-primary-900 font-semibold">
-                  {confirmation.confirmation_code}
+                  {confirmation.group_code}
                 </span>
               </div>
-              <div className="flex justify-between py-3 border-b border-sand-100">
-                <span className="text-sm text-gray-400 font-sans uppercase tracking-wider">
-                  Huesped
-                </span>
-                <span className="text-primary-800 font-sans font-medium">
-                  {confirmation.guest_name}
-                </span>
+
+              <div className="py-3 border-b border-sand-100">
+                <p className="text-sm text-gray-400 font-sans uppercase tracking-wider mb-3">
+                  Reservas individuales
+                </p>
+                <div className="space-y-2">
+                  {confirmation.reservations.map((res) => (
+                    <div
+                      key={res.confirmation_code}
+                      className="flex justify-between items-center bg-sand-50 rounded-lg px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-serif text-sm text-primary-900 font-medium">
+                          {res.room_type}
+                        </p>
+                        <p className="text-xs text-gray-400 font-sans">
+                          {res.check_in_date} — {res.check_out_date}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono text-sm text-accent-600 font-medium">
+                          {res.confirmation_code}
+                        </p>
+                        <p className="text-xs text-gray-400 font-sans">
+                          {res.currency} {res.total_amount}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-between py-3 border-b border-sand-100">
-                <span className="text-sm text-gray-400 font-sans uppercase tracking-wider">
-                  Habitacion
-                </span>
-                <span className="text-primary-800 font-sans font-medium">
-                  {confirmation.room_type}
-                </span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-sand-100">
-                <span className="text-sm text-gray-400 font-sans uppercase tracking-wider">
-                  Check-in
-                </span>
-                <span className="text-primary-800 font-sans font-medium">
-                  {confirmation.check_in_date}
-                </span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-sand-100">
-                <span className="text-sm text-gray-400 font-sans uppercase tracking-wider">
-                  Check-out
-                </span>
-                <span className="text-primary-800 font-sans font-medium">
-                  {confirmation.check_out_date}
-                </span>
-              </div>
+
               <div className="flex justify-between py-4 bg-sand-50 -mx-8 px-8 rounded-b-lg mt-4">
                 <span className="text-sm font-semibold text-primary-700 font-sans uppercase tracking-wider">
                   Total
@@ -182,41 +182,14 @@ export default function BookingClient({ slug }: Props) {
     );
   }
 
-  // Loading
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <svg
-          className="animate-spin h-8 w-8 text-accent-500"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  // No availability
-  if (!availability) {
+  // No combination data
+  if (!combo) {
     return (
       <div>
         <div className="bg-primary-900 py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="font-serif text-4xl text-white">
-              Completar Reserva
+              Reserva Grupal
             </h1>
           </div>
         </div>
@@ -235,15 +208,24 @@ export default function BookingClient({ slug }: Props) {
             />
           </svg>
           <p className="text-gray-500 font-sans mb-6">
-            No se encontro disponibilidad para esta seleccion.
+            No se encontro la combinacion seleccionada.
           </p>
           <Link href="/disponibilidad" className="btn-primary">
-            Buscar Nuevamente
+            Buscar Disponibilidad
           </Link>
         </div>
       </div>
     );
   }
+
+  const nights = Math.max(
+    0,
+    Math.ceil(
+      (new Date(combo.check_out).getTime() -
+        new Date(combo.check_in).getTime()) /
+        86400000
+    )
+  );
 
   // Booking form
   return (
@@ -271,10 +253,10 @@ export default function BookingClient({ slug }: Props) {
             Volver a disponibilidad
           </Link>
           <p className="text-accent-400 text-sm uppercase tracking-[0.3em] font-sans font-medium mb-3">
-            Paso final
+            Reserva grupal
           </p>
           <h1 className="font-serif text-3xl sm:text-4xl text-white">
-            Completar Reserva
+            Completar Reserva de Grupo
           </h1>
         </div>
       </div>
@@ -425,7 +407,7 @@ export default function BookingClient({ slug }: Props) {
                     Procesando...
                   </span>
                 ) : (
-                  "Confirmar Reserva"
+                  "Confirmar Reserva Grupal"
                 )}
               </button>
             </form>
@@ -435,40 +417,80 @@ export default function BookingClient({ slug }: Props) {
           <div>
             <div className="bg-white border border-sand-200 rounded-lg p-8 sticky top-28 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary-500 font-sans mb-4">
-                Resumen de reserva
+                Resumen de reserva grupal
               </p>
-
-              <h3 className="font-serif text-xl text-primary-900 mb-6">
-                {availability.room_type.name}
-              </h3>
 
               <div className="space-y-3 text-sm font-sans mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Check-in</span>
                   <span className="text-primary-800 font-medium">
-                    {checkIn}
+                    {combo.check_in}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Check-out</span>
                   <span className="text-primary-800 font-medium">
-                    {checkOut}
+                    {combo.check_out}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Huespedes</span>
+                  <span className="text-gray-400">Noches</span>
                   <span className="text-primary-800 font-medium">
-                    {adults} adulto(s)
-                    {children > 0 && `, ${children} menor(es)`}
+                    {nights}
                   </span>
                 </div>
               </div>
 
-              <PriceBreakdown
-                nightlyPrices={availability.nightly_prices}
-                total={availability.total}
-                currency="PEN"
-              />
+              <div className="border-t border-sand-100 pt-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 font-sans">
+                  Habitaciones
+                </p>
+                {combo.rooms.map((room, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 bg-sand-50 rounded-lg p-3"
+                  >
+                    <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-primary-100">
+                      {room.cover_photo ? (
+                        <img
+                          src={room.cover_photo}
+                          alt={room.room_type_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-primary-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-primary-900 font-medium truncate">
+                        {room.quantity > 1 && `${room.quantity}x `}
+                        {room.room_type_name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {room.adults_per_room} adulto(s)
+                        {room.children_per_room > 0 &&
+                          `, ${room.children_per_room} menor(es)`}
+                      </p>
+                    </div>
+                    <p className="text-xs text-primary-900 font-semibold flex-shrink-0">
+                      PEN {room.subtotal}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-sand-100 mt-4 pt-4 flex justify-between items-center">
+                <span className="text-sm font-semibold text-primary-700 font-sans uppercase tracking-wider">
+                  Total
+                </span>
+                <span className="font-serif text-2xl text-primary-900 font-semibold">
+                  PEN {combo.total}
+                </span>
+              </div>
 
               <div className="mt-6 flex items-start gap-2 text-xs text-gray-400 font-sans">
                 <svg
@@ -484,7 +506,7 @@ export default function BookingClient({ slug }: Props) {
                     d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
                   />
                 </svg>
-                Reserva segura. No se realizara ningun cobro hasta su llegada.
+                Reserva segura. Se crearan {combo.rooms.reduce((sum, r) => sum + r.quantity, 0)} reservas vinculadas.
               </div>
             </div>
           </div>

@@ -120,6 +120,53 @@ export interface AvailabilityResult {
   property_slug: string;
 }
 
+export interface CombinationRoom {
+  room_type: RoomType;
+  quantity: number;
+  adults_per_room: number;
+  children_per_room: number;
+  nightly_prices: NightlyPrice[];
+  subtotal: string;
+}
+
+export interface CombinationResult {
+  rooms: CombinationRoom[];
+  total: string;
+  property_name: string;
+  property_slug: string;
+}
+
+export interface AvailabilityResponse {
+  results: AvailabilityResult[];
+  combinations: CombinationResult[];
+}
+
+export interface GroupRoomItem {
+  room_type_id: string;
+  adults: number;
+  children: number;
+}
+
+export interface GroupReservationRequest {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  document_type: string;
+  document_number: string;
+  check_in_date: string;
+  check_out_date: string;
+  rooms: GroupRoomItem[];
+  special_requests?: string;
+}
+
+export interface GroupReservationConfirmation {
+  group_code: string;
+  reservations: ReservationConfirmation[];
+  total_amount: string;
+  currency: string;
+}
+
 export interface ReservationConfirmation {
   confirmation_code: string;
   check_in_date: string;

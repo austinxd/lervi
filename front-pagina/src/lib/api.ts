@@ -1,6 +1,8 @@
 import type {
-  AvailabilityResult,
+  AvailabilityResponse,
   BankAccount,
+  GroupReservationConfirmation,
+  GroupReservationRequest,
   GuestReservation,
   GuestSession,
   OrganizationInfo,
@@ -48,7 +50,7 @@ export async function searchAvailability(
   adults: number,
   children: number,
   propertySlug?: string
-): Promise<AvailabilityResult[]> {
+): Promise<AvailabilityResponse> {
   const params = new URLSearchParams({
     check_in: checkIn,
     check_out: checkOut,
@@ -71,6 +73,19 @@ export async function createReservation(
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al crear la reserva");
+  return res.json();
+}
+
+export async function createGroupReservation(
+  slug: string,
+  data: GroupReservationRequest
+): Promise<GroupReservationConfirmation> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/reservations/group/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al crear la reserva grupal");
   return res.json();
 }
 

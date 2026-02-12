@@ -105,6 +105,12 @@ class Reservation(TenantModel):
     )
     origin_metadata = models.JSONField(default=dict, blank=True)
 
+    # --- Group ---
+    group_code = models.CharField(
+        max_length=10, blank=True, default="", db_index=True,
+        help_text="Código de grupo para reservas vinculadas",
+    )
+
     # --- Other ---
     special_requests = models.TextField(blank=True, default="")
 

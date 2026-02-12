@@ -34,6 +34,11 @@ urlpatterns = [
         name="public-create-reservation",
     ),
     path(
+        "<slug:org_slug>/reservations/group/",
+        views.CreateGroupReservationView.as_view(),
+        name="public-create-group-reservation",
+    ),
+    path(
         "<slug:org_slug>/reservations/<str:confirmation_code>/",
         views.ReservationLookupView.as_view(),
         name="public-reservation-lookup",

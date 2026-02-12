@@ -2,21 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { searchAvailability } from "@/lib/api";
 import PriceBreakdown from "@/components/PriceBreakdown";
-import type { AvailabilityResult } from "@/lib/types";
+import type { AvailabilityResult, CombinationResult } from "@/lib/types";
 
 interface Props {
   slug: string;
 }
 
 export default function AvailabilityClient({ slug }: Props) {
+  const router = useRouter();
   const today = new Date().toISOString().split("T")[0];
   const [checkIn, setCheckIn] = useState(today);
   const [checkOut, setCheckOut] = useState("");
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [results, setResults] = useState<AvailabilityResult[]>([]);
+  const [combinations, setCombinations] = useState<CombinationResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
@@ -34,14 +37,35 @@ export default function AvailabilityClient({ slug }: Props) {
         adults,
         children
       );
-      setResults(data);
+      setResults(data.results);
+      setCombinations(data.combinations);
       setSearched(true);
     } catch {
       setError("No se pudo consultar la disponibilidad.");
       setResults([]);
+      setCombinations([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectCombination = (combo: CombinationResult) => {
+    const comboData = {
+      rooms: combo.rooms.map((r) => ({
+        room_type_id: r.room_type.id,
+        room_type_name: r.room_type.name,
+        cover_photo: r.room_type.cover_photo,
+        quantity: r.quantity,
+        adults_per_room: r.adults_per_room,
+        children_per_room: r.children_per_room,
+        subtotal: r.subtotal,
+      })),
+      total: combo.total,
+      check_in: checkIn,
+      check_out: checkOut,
+    };
+    sessionStorage.setItem("group_combination", JSON.stringify(comboData));
+    router.push(`/${slug}/reservar-grupo`);
   };
 
   return (
@@ -180,7 +204,7 @@ export default function AvailabilityClient({ slug }: Props) {
         )}
 
         {/* No results */}
-        {searched && !loading && results.length === 0 && (
+        {searched && !loading && results.length === 0 && combinations.length === 0 && (
           <div className="text-center py-16">
             <svg
               className="w-16 h-16 text-gray-300 mx-auto mb-4"
@@ -328,6 +352,98 @@ export default function AvailabilityClient({ slug }: Props) {
                         />
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Group Combinations */}
+        {combinations.length > 0 && (
+          <div className="mt-12 space-y-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary-500 font-sans">
+                Opciones para Grupos
+              </p>
+              <p className="text-sm text-gray-400 font-sans mt-1">
+                Combine varias habitaciones para acomodar a todo su grupo
+              </p>
+            </div>
+
+            {combinations.map((combo, comboIdx) => (
+              <div
+                key={comboIdx}
+                className="bg-white border border-sand-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-in-up"
+              >
+                <div className="p-8">
+                  <div className="flex items-center gap-2 mb-6">
+                    <svg className="w-5 h-5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                    </svg>
+                    <h3 className="font-serif text-lg text-primary-900">
+                      Opcion {comboIdx + 1} — {combo.rooms.reduce((sum, r) => sum + r.quantity, 0)} habitacion(es)
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {combo.rooms.map((room, roomIdx) => (
+                      <div
+                        key={roomIdx}
+                        className="flex items-center gap-4 bg-sand-50 rounded-lg p-4 border border-sand-100"
+                      >
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-primary-100">
+                          {room.room_type.cover_photo ? (
+                            <img
+                              src={room.room_type.cover_photo}
+                              alt={room.room_type.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <svg className="w-6 h-6 text-primary-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-serif text-sm text-primary-900 font-medium truncate">
+                            {room.quantity > 1 && `${room.quantity}x `}{room.room_type.name}
+                          </p>
+                          <p className="text-xs text-gray-400 font-sans mt-0.5">
+                            {room.adults_per_room} adulto(s){room.children_per_room > 0 && `, ${room.children_per_room} menor(es)`} por hab.
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-serif text-sm text-primary-900 font-semibold">
+                            PEN {room.subtotal}
+                          </p>
+                          {room.quantity > 1 && (
+                            <p className="text-xs text-gray-400 font-sans">
+                              x{room.quantity}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-sand-100">
+                    <div>
+                      <p className="text-xs text-gray-400 font-sans uppercase tracking-wider">
+                        Total del grupo
+                      </p>
+                      <p className="font-serif text-2xl text-primary-900 font-semibold">
+                        PEN {combo.total}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleSelectCombination(combo)}
+                      className="btn-primary !text-xs"
+                    >
+                      Reservar Grupo
+                    </button>
                   </div>
                 </div>
               </div>

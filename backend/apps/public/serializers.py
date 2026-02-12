@@ -150,6 +150,22 @@ class AvailabilityResultSerializer(serializers.Serializer):
     property_slug = serializers.CharField()
 
 
+class CombinationRoomSerializer(serializers.Serializer):
+    room_type = RoomTypeListSerializer()
+    quantity = serializers.IntegerField()
+    adults_per_room = serializers.IntegerField()
+    children_per_room = serializers.IntegerField()
+    nightly_prices = serializers.ListField()
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class CombinationResultSerializer(serializers.Serializer):
+    rooms = CombinationRoomSerializer(many=True)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    property_name = serializers.CharField()
+    property_slug = serializers.CharField()
+
+
 class PublicReservationSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
@@ -211,3 +227,43 @@ class GuestReservationListSerializer(serializers.Serializer):
     currency = serializers.CharField()
     voucher_image = serializers.CharField(allow_null=True)
     property_name = serializers.CharField()
+
+
+class GroupRoomItemSerializer(serializers.Serializer):
+    room_type_id = serializers.UUIDField()
+    adults = serializers.IntegerField(min_value=1)
+    children = serializers.IntegerField(min_value=0, default=0)
+
+
+class PublicGroupReservationSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    phone = serializers.CharField(max_length=30, required=False, default="")
+    document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
+    document_number = serializers.CharField(max_length=50)
+    check_in_date = serializers.DateField()
+    check_out_date = serializers.DateField()
+    rooms = GroupRoomItemSerializer(many=True)
+    special_requests = serializers.CharField(required=False, default="")
+
+    def validate_rooms(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Se requieren al menos 2 habitaciones para una reserva grupal."
+            )
+        return value
+
+    def validate(self, data):
+        if data["check_out_date"] <= data["check_in_date"]:
+            raise serializers.ValidationError(
+                {"check_out_date": "La fecha de salida debe ser posterior a la de entrada."}
+            )
+        return data
+
+
+class GroupReservationConfirmationSerializer(serializers.Serializer):
+    group_code = serializers.CharField()
+    reservations = ReservationConfirmationSerializer(many=True)
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    currency = serializers.CharField()

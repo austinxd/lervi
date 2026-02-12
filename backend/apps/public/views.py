@@ -1,7 +1,9 @@
+import uuid
 from datetime import date, timedelta
 
 import jwt
 from django.conf import settings
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -17,12 +19,16 @@ from apps.reservations.models import Reservation
 from apps.rooms.models import Room, RoomType
 
 from .permissions import IsAuthenticatedGuest
+from .combinations import find_group_combinations
 from .serializers import (
     AvailabilityResultSerializer,
+    CombinationResultSerializer,
+    GroupReservationConfirmationSerializer,
     GuestLoginSerializer,
     GuestReservationListSerializer,
     OrganizationInfoSerializer,
     PublicBankAccountSerializer,
+    PublicGroupReservationSerializer,
     PublicReservationSerializer,
     ReservationConfirmationSerializer,
     RoomTypeDetailSerializer,
@@ -170,14 +176,16 @@ class AvailabilityView(APIView):
         ]
 
         results = []
+        all_available = []  # Para combinaciones: todos los tipos disponibles
+
         for prop in properties:
-            room_types = RoomType.objects.filter(
+            # Buscar TODOS los tipos activos (sin filtro max_adults) para disponibilidad
+            all_room_types = RoomType.objects.filter(
                 property=prop,
                 is_active=True,
-                max_adults__gte=adults,
             ).select_related("property").prefetch_related("photos")
 
-            for rt in room_types:
+            for rt in all_room_types:
                 eligible_room_ids = set(
                     Room.objects.filter(property=prop, room_types=rt).values_list("id", flat=True)
                 )
@@ -205,27 +213,60 @@ class AvailabilityView(APIView):
                 available = max(0, total_rooms - len(busy_room_ids) - unassigned_count)
 
                 if available > 0:
-                    nightly_prices = calculate_nightly_prices(
-                        property_obj=prop,
-                        room_type=rt,
-                        check_in=check_in_date,
-                        check_out=check_out_date,
-                        adults=adults,
-                        children=children,
-                    )
-                    total = calculate_total(nightly_prices)
-
-                    results.append({
+                    all_available.append({
                         "room_type": rt,
                         "available_rooms": available,
-                        "nightly_prices": nightly_prices,
-                        "total": total,
-                        "property_name": prop.name,
-                        "property_slug": prop.slug,
+                        "property": prop,
                     })
 
-        serializer = AvailabilityResultSerializer(results, many=True)
-        return Response(serializer.data)
+                    # Solo incluir en results individuales si cabe el grupo
+                    if rt.max_adults >= adults:
+                        nightly_prices = calculate_nightly_prices(
+                            property_obj=prop,
+                            room_type=rt,
+                            check_in=check_in_date,
+                            check_out=check_out_date,
+                            adults=adults,
+                            children=children,
+                        )
+                        total = calculate_total(nightly_prices)
+
+                        results.append({
+                            "room_type": rt,
+                            "available_rooms": available,
+                            "nightly_prices": nightly_prices,
+                            "total": total,
+                            "property_name": prop.name,
+                            "property_slug": prop.slug,
+                        })
+
+        # Generar combinaciones agrupadas por property
+        combinations = []
+        if adults + children > 1:
+            props_available = {}
+            for item in all_available:
+                p = item["property"]
+                props_available.setdefault(p.id, {"property": p, "types": []})
+                props_available[p.id]["types"].append(item)
+
+            for prop_data in props_available.values():
+                prop_combos = find_group_combinations(
+                    available_room_types=prop_data["types"],
+                    total_adults=adults,
+                    total_children=children,
+                    property_obj=prop_data["property"],
+                    check_in=check_in_date,
+                    check_out=check_out_date,
+                )
+                combinations.extend(prop_combos)
+
+        results_serializer = AvailabilityResultSerializer(results, many=True)
+        combinations_serializer = CombinationResultSerializer(combinations, many=True)
+
+        return Response({
+            "results": results_serializer.data,
+            "combinations": combinations_serializer.data,
+        })
 
 
 class CreateReservationView(APIView):
@@ -353,6 +394,148 @@ class CreateReservationView(APIView):
             "guest_name": guest.full_name,
             "payment_deadline": reservation.payment_deadline,
             "has_bank_accounts": has_bank_accounts,
+        })
+        return Response(result.data, status=status.HTTP_201_CREATED)
+
+
+class CreateGroupReservationView(APIView):
+    """Crear reservas grupales vinculadas por group_code."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = PublicGroupReservationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        properties = get_org_properties(org)
+        group_code = uuid.uuid4().hex[:8].upper()
+
+        # Get or create guest (una sola vez)
+        guest, _ = Guest.objects.get_or_create(
+            organization=org,
+            email=data["email"],
+            defaults={
+                "first_name": data["first_name"],
+                "last_name": data["last_name"],
+                "phone": data.get("phone", ""),
+                "document_type": data.get("document_type", ""),
+                "document_number": data.get("document_number", ""),
+            },
+        )
+
+        active_statuses = [
+            Reservation.OperationalStatus.CONFIRMED,
+            Reservation.OperationalStatus.CHECK_IN,
+            Reservation.OperationalStatus.PENDING,
+        ]
+
+        reservations = []
+        total_group = 0
+
+        with transaction.atomic():
+            for room_item in data["rooms"]:
+                room_type = get_object_or_404(
+                    RoomType,
+                    id=room_item["room_type_id"],
+                    property__in=properties,
+                    is_active=True,
+                )
+                prop = room_type.property
+
+                # Validate capacity
+                if room_item["adults"] > room_type.max_adults:
+                    return Response(
+                        {"detail": f"{room_type.name} permite máximo {room_type.max_adults} adultos."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Check availability
+                eligible_room_ids = set(
+                    Room.objects.filter(property=prop, room_types=room_type).values_list("id", flat=True)
+                )
+                busy_room_ids = set(
+                    Reservation.objects.filter(
+                        property=prop,
+                        room_id__in=eligible_room_ids,
+                        operational_status__in=active_statuses,
+                        check_in_date__lt=data["check_out_date"],
+                        check_out_date__gt=data["check_in_date"],
+                    ).values_list("room_id", flat=True)
+                )
+                unassigned_count = Reservation.objects.filter(
+                    property=prop,
+                    room_type=room_type,
+                    room__isnull=True,
+                    operational_status__in=active_statuses,
+                    check_in_date__lt=data["check_out_date"],
+                    check_out_date__gt=data["check_in_date"],
+                ).count()
+                available = len(eligible_room_ids) - len(busy_room_ids) - unassigned_count
+                if available <= 0:
+                    return Response(
+                        {"detail": f"No hay disponibilidad para {room_type.name}."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+                # Calculate price
+                nightly_prices = calculate_nightly_prices(
+                    property_obj=prop,
+                    room_type=room_type,
+                    check_in=data["check_in_date"],
+                    check_out=data["check_out_date"],
+                    adults=room_item["adults"],
+                    children=room_item.get("children", 0),
+                )
+                total = calculate_total(nightly_prices)
+
+                # Check if property has active bank accounts
+                has_bank_accounts = BankAccount.objects.filter(
+                    property=prop, is_active=True,
+                ).exists()
+
+                payment_deadline = None
+                if has_bank_accounts:
+                    payment_deadline = timezone.now() + timedelta(hours=1)
+
+                reservation = Reservation.objects.create(
+                    organization=org,
+                    property=prop,
+                    guest=guest,
+                    room_type=room_type,
+                    check_in_date=data["check_in_date"],
+                    check_out_date=data["check_out_date"],
+                    adults=room_item["adults"],
+                    children=room_item.get("children", 0),
+                    total_amount=total,
+                    currency=org.currency,
+                    origin_type=Reservation.OriginType.WEBSITE,
+                    origin_metadata={"source": "front-pagina", "group": True},
+                    special_requests=data.get("special_requests", ""),
+                    operational_status=Reservation.OperationalStatus.PENDING,
+                    financial_status=Reservation.FinancialStatus.PENDING_PAYMENT,
+                    payment_deadline=payment_deadline,
+                    group_code=group_code,
+                )
+
+                total_group += total
+                reservations.append({
+                    "confirmation_code": reservation.confirmation_code,
+                    "check_in_date": reservation.check_in_date,
+                    "check_out_date": reservation.check_out_date,
+                    "room_type": room_type.name,
+                    "total_amount": reservation.total_amount,
+                    "currency": reservation.currency,
+                    "guest_name": guest.full_name,
+                    "payment_deadline": reservation.payment_deadline,
+                    "has_bank_accounts": has_bank_accounts,
+                })
+
+        result = GroupReservationConfirmationSerializer({
+            "group_code": group_code,
+            "reservations": reservations,
+            "total_amount": total_group,
+            "currency": org.currency,
         })
         return Response(result.data, status=status.HTTP_201_CREATED)
 
