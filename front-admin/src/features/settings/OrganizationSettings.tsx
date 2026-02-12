@@ -63,6 +63,16 @@ export default function OrganizationSettings() {
               <Grid item xs={12} sm={6}><TextField {...register('subdomain')} label="Subdominio" fullWidth disabled /></Grid>
               <Grid item xs={12} sm={6}><TextField {...register('custom_domain')} label="Dominio custom" fullWidth /></Grid>
 
+              {/* Social links */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="subtitle2" color="text.secondary" mb={1}>Redes sociales</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}><TextField {...register('social_links.instagram')} label="Instagram" fullWidth placeholder="https://instagram.com/..." /></Grid>
+              <Grid item xs={12} sm={6}><TextField {...register('social_links.facebook')} label="Facebook" fullWidth placeholder="https://facebook.com/..." /></Grid>
+              <Grid item xs={12} sm={6}><TextField {...register('social_links.tripadvisor')} label="TripAdvisor" fullWidth placeholder="https://tripadvisor.com/..." /></Grid>
+              <Grid item xs={12} sm={6}><TextField {...register('social_links.google_maps')} label="Google Maps" fullWidth placeholder="https://maps.google.com/..." /></Grid>
+
               {/* Theme */}
               <Grid item xs={12}>
                 <Divider sx={{ my: 1 }} />
