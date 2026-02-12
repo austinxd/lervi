@@ -23,6 +23,10 @@ export const roomTypeApi = createApi({
       query: ({ id, data }) => ({ url: `/room-types/${id}/`, method: 'PATCH', data }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'RoomType', id }],
     }),
+    deleteRoomType: builder.mutation<void, string>({
+      query: (id) => ({ url: `/room-types/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['RoomType'],
+    }),
     // Bed configurations
     addBedConfig: builder.mutation<BedConfiguration, { roomTypeId: string; data: Partial<BedConfiguration> }>({
       query: ({ roomTypeId, data }) => ({ url: `/room-types/${roomTypeId}/bed-configs/`, method: 'POST', data }),
@@ -64,7 +68,7 @@ export const roomTypeApi = createApi({
 
 export const {
   useGetRoomTypesQuery, useGetRoomTypeQuery,
-  useCreateRoomTypeMutation, useUpdateRoomTypeMutation,
+  useCreateRoomTypeMutation, useUpdateRoomTypeMutation, useDeleteRoomTypeMutation,
   useAddBedConfigMutation, useUpdateBedConfigMutation, useDeleteBedConfigMutation,
   useAddPhotoMutation, useUpdatePhotoMutation, useDeletePhotoMutation,
 } = roomTypeApi;

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { useSnackbar } from 'notistack';
 import { useAppSelector } from '../../store/hooks';
-import { useGetRoomTypesQuery } from '../../services/roomTypeService';
+import { useGetRoomTypesQuery, useDeleteRoomTypeMutation } from '../../services/roomTypeService';
 import DataTable, { Column } from '../../components/DataTable';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/formatters';
 import type { RoomType } from '../../interfaces/types';
 
@@ -14,13 +16,27 @@ const BED_LABELS: Record<string, string> = {
 
 export default function RoomTypeList() {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const propertyId = useAppSelector((s) => s.auth.activePropertyId);
   const [page, setPage] = useState(0);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data } = useGetRoomTypesQuery({
     property: propertyId ?? undefined,
     page: page + 1,
   });
+  const [deleteRoomType] = useDeleteRoomTypeMutation();
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteRoomType(deleteId).unwrap();
+      enqueueSnackbar('Tipo de habitación eliminado', { variant: 'success' });
+      setDeleteId(null);
+    } catch {
+      enqueueSnackbar('Error al eliminar', { variant: 'error' });
+    }
+  };
 
   const columns: Column<RoomType>[] = [
     { id: 'name', label: 'Nombre', render: (r) => r.name },
@@ -33,6 +49,13 @@ export default function RoomTypeList() {
     }},
     { id: 'photos', label: 'Fotos', render: (r) => r.photos.length },
     { id: 'active', label: 'Activo', render: (r) => r.is_active ? 'Sí' : 'No' },
+    {
+      id: 'actions', label: '', render: (r) => (
+        <Button size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteId(r.id); }}>
+          Eliminar
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -51,6 +74,14 @@ export default function RoomTypeList() {
         onPageChange={setPage}
         rowKey={(r) => r.id}
         onRowClick={(r) => navigate(`/room-types/${r.id}/edit`)}
+      />
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Eliminar tipo de habitación"
+        message="¿Eliminar este tipo de habitación? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
       />
     </Box>
   );
