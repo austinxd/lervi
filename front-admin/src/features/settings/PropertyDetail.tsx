@@ -12,6 +12,7 @@ import AddPhotoIcon from '@mui/icons-material/AddPhotoAlternate';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import {
+  useGetOrganizationQuery,
   useGetPropertyQuery,
   useUpdatePropertyMutation,
   useUploadPropertyLogoMutation,
@@ -44,6 +45,7 @@ export default function PropertyDetail() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
+  const { data: org } = useGetOrganizationQuery();
   const { data: property, isLoading } = useGetPropertyQuery(id!);
   const { data: photos = [] } = useGetPropertyPhotosQuery(id!);
   const [updateProperty] = useUpdatePropertyMutation();
@@ -248,18 +250,25 @@ export default function PropertyDetail() {
 
   return (
     <Box maxWidth={900}>
-      <Box display="flex" alignItems="center" gap={1} mb={3}>
-        <IconButton onClick={() => navigate('/settings/properties')}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h5">{property.name}</Typography>
-        <Chip label={property.slug} size="small" variant="outlined" sx={{ ml: 1 }} />
+      <Box mb={3}>
+        {org && (
+          <Typography variant="body2" color="text.secondary" mb={0.5}>
+            {org.name}
+          </Typography>
+        )}
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={() => navigate('/settings/properties')}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h5">{property.name}</Typography>
+          <Chip label={property.slug} size="small" variant="outlined" sx={{ ml: 1 }} />
+        </Box>
       </Box>
 
       {/* Card 1: Información básica */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" mb={2}>Información básica</Typography>
+          <Typography variant="h6" mb={2}>Sucursal</Typography>
           <form onSubmit={basicForm.handleSubmit(saveBasic)}>
             <Grid container spacing={2}>
               <Grid item xs={8}>

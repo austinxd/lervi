@@ -100,6 +100,13 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
+    # Media files — servidos directo desde Django media root
+    location /media/ {
+        alias /srv/lervi/backend/media/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3100;
         proxy_http_version 1.1;
