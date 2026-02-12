@@ -400,6 +400,22 @@ export interface AutomationLog {
 }
 
 // ---- Dashboard ----
+export interface RoomTypeOccupancy {
+  id: string;
+  name: string;
+  total_rooms: number;
+  occupied: number;
+  occupancy_rate: number;
+  upcoming_demand: number;
+}
+
+export interface DashboardAlert {
+  type: string;
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+  count: number;
+}
+
 export interface DashboardToday {
   date: string;
   reservations: {
@@ -411,13 +427,19 @@ export interface DashboardToday {
   rooms: {
     total: number;
     by_status: Record<string, number>;
+    ready: number;
+    not_ready: number;
   };
   tasks: {
     pending: number;
     in_progress: number;
     completed_today: number;
+    by_type: Record<string, number>;
+    urgent: number;
   };
   revenue_today: string;
+  room_type_occupancy: RoomTypeOccupancy[];
+  alerts: DashboardAlert[];
 }
 
 export interface OccupancyData {

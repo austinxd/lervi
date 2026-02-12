@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from apps.common.permissions import HasRolePermission
 from apps.reservations.models import Payment, Reservation
-from apps.rooms.models import Room
+from apps.rooms.models import Room, RoomType
 from apps.tasks.models import Task
 
 
@@ -77,6 +77,97 @@ class TodayView(APIView):
 
         revenue_today = payment_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0")
 
+        # --- Rooms readiness ---
+        rooms_ready = room_status_counts.get("available", 0)
+        rooms_not_ready = sum(
+            room_status_counts.get(s, 0) for s in ("dirty", "cleaning", "inspection")
+        )
+
+        # --- Tasks by type & urgent ---
+        active_tasks_qs = task_qs.filter(status__in=["pending", "in_progress"])
+        tasks_by_type = dict(
+            active_tasks_qs.values_list("task_type")
+            .annotate(count=Count("id"))
+            .values_list("task_type", "count")
+        )
+        tasks_urgent = active_tasks_qs.filter(priority__in=["high", "urgent"]).count()
+
+        # --- Room type occupancy ---
+        rt_qs = RoomType.objects.filter(property__organization=org, is_active=True)
+        if property_id:
+            rt_qs = rt_qs.filter(property_id=property_id)
+
+        next_7 = today + timedelta(days=7)
+        room_type_occupancy = []
+        for rt in rt_qs:
+            total_rt_rooms = Room.objects.filter(room_types=rt).count()
+            if total_rt_rooms == 0:
+                continue
+            occupied = Reservation.objects.filter(
+                room_type=rt,
+                operational_status="check_in",
+            ).count()
+            upcoming_demand = Reservation.objects.filter(
+                room_type=rt,
+                operational_status__in=["pending", "confirmed"],
+                check_in_date__gte=today,
+                check_in_date__lt=next_7,
+            ).count()
+            rate = round(occupied / total_rt_rooms * 100, 1)
+            room_type_occupancy.append({
+                "id": str(rt.id),
+                "name": rt.name,
+                "total_rooms": total_rt_rooms,
+                "occupied": occupied,
+                "occupancy_rate": rate,
+                "upcoming_demand": upcoming_demand,
+            })
+        room_type_occupancy.sort(key=lambda x: x["occupancy_rate"], reverse=True)
+
+        # --- Alerts ---
+        alerts = []
+        overdue_checkins = res_qs.filter(
+            check_in_date=today,
+            operational_status="confirmed",
+        ).count()
+        if overdue_checkins:
+            alerts.append({
+                "type": "overdue_checkin",
+                "severity": "warning",
+                "message": f"{overdue_checkins} check-in(s) pendiente(s) de hoy",
+                "count": overdue_checkins,
+            })
+
+        dirty_rooms = room_status_counts.get("dirty", 0)
+        if dirty_rooms:
+            alerts.append({
+                "type": "dirty_rooms",
+                "severity": "warning",
+                "message": f"{dirty_rooms} habitacion(es) pendientes de limpieza",
+                "count": dirty_rooms,
+            })
+
+        if tasks_urgent:
+            alerts.append({
+                "type": "urgent_tasks",
+                "severity": "error",
+                "message": f"{tasks_urgent} tarea(s) urgente(s)",
+                "count": tasks_urgent,
+            })
+
+        tomorrow = today + timedelta(days=1)
+        unconfirmed_tomorrow = res_qs.filter(
+            check_in_date=tomorrow,
+            operational_status="pending",
+        ).count()
+        if unconfirmed_tomorrow:
+            alerts.append({
+                "type": "unconfirmed_tomorrow",
+                "severity": "info",
+                "message": f"{unconfirmed_tomorrow} reserva(s) sin confirmar para manana",
+                "count": unconfirmed_tomorrow,
+            })
+
         return Response({
             "date": today.isoformat(),
             "reservations": {
@@ -88,13 +179,19 @@ class TodayView(APIView):
             "rooms": {
                 "total": total_rooms,
                 "by_status": room_status_counts,
+                "ready": rooms_ready,
+                "not_ready": rooms_not_ready,
             },
             "tasks": {
                 "pending": tasks_pending,
                 "in_progress": tasks_in_progress,
                 "completed_today": tasks_completed_today,
+                "by_type": tasks_by_type,
+                "urgent": tasks_urgent,
             },
             "revenue_today": str(revenue_today),
+            "room_type_occupancy": room_type_occupancy,
+            "alerts": alerts,
         })
 
 

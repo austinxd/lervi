@@ -2,26 +2,23 @@ import {
   Box,
   Grid,
   Typography,
-  Card,
-  CardContent,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
 } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HotelIcon from '@mui/icons-material/Hotel';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useAppSelector } from '../../store/hooks';
 import { useGetTodayQuery, useGetOccupancyQuery } from '../../services/dashboardService';
 import { formatCurrency } from '../../utils/formatters';
-import { ROOM_STATUS } from '../../utils/statusLabels';
-import StatusChip from '../../components/StatusChip';
 import SummaryCard from './SummaryCard';
 import OccupancyChart from './OccupancyChart';
 import RevenueSection from './RevenueSection';
+import AlertsBanner from './AlertsBanner';
+import RoomReadinessCard from './RoomReadinessCard';
+import RoomTypePopularityChart from './RoomTypePopularityChart';
+import TaskBreakdownCard from './TaskBreakdownCard';
 
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user);
@@ -56,12 +53,19 @@ export default function DashboardPage() {
   const rooms = todayData?.rooms;
   const tasks = todayData?.tasks;
   const revenueToday = todayData?.revenue_today ?? '0';
+  const alerts = todayData?.alerts ?? [];
+  const roomTypeOccupancy = todayData?.room_type_occupancy ?? [];
+
+  const roomsReadyLabel = rooms ? `${rooms.ready}/${rooms.total}` : '0';
 
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 3 }}>
         Dashboard
       </Typography>
+
+      {/* Alerts */}
+      <AlertsBanner alerts={alerts} />
 
       {/* Summary cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -91,97 +95,67 @@ export default function DashboardPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SummaryCard
-            title="Revenue hoy"
-            value={formatCurrency(revenueToday)}
-            icon={<AttachMoneyIcon />}
-            color="#9C27B0"
+            title="Hab. listas"
+            value={roomsReadyLabel}
+            icon={<CleaningServicesIcon />}
+            color="#00897B"
           />
         </Grid>
       </Grid>
 
-      {/* Occupancy chart + Room status */}
+      {/* Occupancy chart + Room readiness */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={8}>
           <OccupancyChart data={occupancyData?.daily ?? []} />
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Estado de habitaciones
-              </Typography>
-              {rooms ? (
-                <>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Total: {rooms.total} habitaciones
-                  </Typography>
-                  <List dense disablePadding>
-                    {Object.entries(rooms.by_status).map(([status, count]) => (
-                      <ListItem key={status} disableGutters sx={{ py: 0.5 }}>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <StatusChip statusMap={ROOM_STATUS} value={status} />
-                              <Typography variant="body2" fontWeight={600}>
-                                {count}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Sin datos disponibles
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+          {rooms ? (
+            <RoomReadinessCard
+              total={rooms.total}
+              byStatus={rooms.by_status}
+              ready={rooms.ready}
+              notReady={rooms.not_ready}
+            />
+          ) : (
+            <RoomReadinessCard total={0} byStatus={{}} ready={0} notReady={0} />
+          )}
         </Grid>
       </Grid>
 
-      {/* Tasks summary */}
-      {tasks && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <AssignmentIcon color="action" />
-              <Typography variant="h6">Tareas</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 4 }}>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Pendientes
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="warning.main">
-                  {tasks.pending}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  En progreso
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="info.main">
-                  {tasks.in_progress}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Completadas hoy
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="success.main">
-                  {tasks.completed_today}
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+      {/* Room type popularity + Task breakdown */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={7}>
+          <RoomTypePopularityChart data={roomTypeOccupancy} />
+        </Grid>
+        <Grid item xs={12} md={5}>
+          {tasks && (
+            <TaskBreakdownCard
+              pending={tasks.pending}
+              inProgress={tasks.in_progress}
+              completedToday={tasks.completed_today}
+              byType={tasks.by_type}
+              urgent={tasks.urgent}
+            />
+          )}
+        </Grid>
+      </Grid>
 
       {/* Revenue section (owners only) */}
-      {isOwner && <RevenueSection />}
+      {isOwner && (
+        <>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Revenue hoy"
+                value={formatCurrency(revenueToday)}
+                icon={<AttachMoneyIcon />}
+                color="#9C27B0"
+              />
+            </Grid>
+          </Grid>
+          <RevenueSection />
+        </>
+      )}
     </Box>
   );
 }
