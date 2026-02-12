@@ -65,7 +65,6 @@ export interface Organization {
   theme_palette: string;
   theme_primary_color: string;
   theme_accent_color: string;
-  website_url: string;
   social_links: Record<string, string>;
   plan: string;
   is_active: boolean;

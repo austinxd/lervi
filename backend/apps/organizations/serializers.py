@@ -13,7 +13,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "subdomain", "custom_domain",
             "theme_template", "theme_palette",
             "theme_primary_color", "theme_accent_color",
-            "website_url", "social_links",
+            "social_links",
             "plan", "is_active",
             "created_at", "updated_at",
         ]

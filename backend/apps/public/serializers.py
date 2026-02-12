@@ -66,7 +66,6 @@ class OrganizationInfoSerializer(serializers.ModelSerializer):
             "theme_palette",
             "theme_primary_color",
             "theme_accent_color",
-            "website_url",
             "social_links",
             "properties",
             "is_multi_property",

@@ -31,14 +31,13 @@ prop.description = (
 prop.tagline = "Donde el lujo encuentra el mar"
 prop.whatsapp = "+51 999 888 777"
 org = prop.organization
-org.website_url = "https://hotelarenablanca.pe"
 org.social_links = {
     "instagram": "https://instagram.com/hotelarenablanca",
     "facebook": "https://facebook.com/hotelarenablanca",
     "tripadvisor": "https://tripadvisor.com/hotel-arena-blanca",
     "google_maps": "https://maps.google.com/?q=Hotel+Arena+Blanca",
 }
-org.save(update_fields=["website_url", "social_links", "updated_at"])
+org.save(update_fields=["social_links", "updated_at"])
 prop.amenities = [
     "Piscina",
     "WiFi gratuito",

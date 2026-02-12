@@ -43,7 +43,6 @@ export interface OrganizationInfo {
   theme_palette: string;
   theme_primary_color: string;
   theme_accent_color: string;
-  website_url: string;
   social_links: {
     instagram?: string;
     facebook?: string;

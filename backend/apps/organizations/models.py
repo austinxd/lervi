@@ -36,7 +36,6 @@ class Organization(BaseModel):
     theme_accent_color = models.CharField(max_length=7, blank=True, default="")
 
     # Brand identity
-    website_url = models.URLField(blank=True, default="")
     social_links = models.JSONField(default=dict, blank=True)
 
     # Subscription

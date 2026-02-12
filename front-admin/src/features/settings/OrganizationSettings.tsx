@@ -51,7 +51,6 @@ export default function OrganizationSettings() {
               <Grid item xs={12} sm={4}><TextField {...register('font')} label="Fuente" fullWidth /></Grid>
               <Grid item xs={12} sm={6}><TextField {...register('subdomain')} label="Subdominio" fullWidth disabled /></Grid>
               <Grid item xs={12} sm={6}><TextField {...register('custom_domain')} label="Dominio custom" fullWidth /></Grid>
-              <Grid item xs={12} sm={6}><TextField {...register('website_url')} label="URL del sitio web" fullWidth /></Grid>
 
               {/* Theme */}
               <Grid item xs={12}>
