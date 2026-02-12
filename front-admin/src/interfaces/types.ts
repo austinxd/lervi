@@ -86,9 +86,24 @@ export interface Property {
   contact_phone: string;
   contact_email: string;
   is_active: boolean;
+  description: string;
+  tagline: string;
+  whatsapp: string;
+  amenities: string[];
+  payment_methods: string[];
+  languages: string[];
+  stars: number | null;
+  hero_image: string;
   logo: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface PropertyPhoto {
+  id: string;
+  image: string;
+  caption: string;
+  sort_order: number;
 }
 
 // ---- Room Type ----

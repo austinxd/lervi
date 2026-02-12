@@ -30,6 +30,7 @@ import UserList from './features/users/UserList';
 import UserForm from './features/users/UserForm';
 import OrganizationSettings from './features/settings/OrganizationSettings';
 import PropertySettings from './features/settings/PropertySettings';
+import PropertyDetail from './features/settings/PropertyDetail';
 import BankAccountSettings from './features/settings/BankAccountSettings';
 
 export default function App() {
@@ -82,6 +83,7 @@ export default function App() {
                 {/* Settings */}
                 <Route path="/settings" element={<RoleGuard minRole="manager"><OrganizationSettings /></RoleGuard>} />
                 <Route path="/settings/properties" element={<RoleGuard minRole="manager"><PropertySettings /></RoleGuard>} />
+                <Route path="/settings/properties/:id" element={<RoleGuard minRole="manager"><PropertyDetail /></RoleGuard>} />
                 <Route path="/settings/bank-accounts" element={<RoleGuard minRole="manager"><BankAccountSettings /></RoleGuard>} />
               </Route>
             </Route>

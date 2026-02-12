@@ -2,32 +2,25 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  Divider, Grid, IconButton, TextField, Typography,
+  Grid, TextField, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { IconButton } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import {
   useGetPropertiesQuery,
   useCreatePropertyMutation,
-  useUpdatePropertyMutation,
   useUploadPropertyLogoMutation,
 } from '../../services/organizationService';
 import DataTable, { Column } from '../../components/DataTable';
 import type { Property } from '../../interfaces/types';
 
-interface FormData {
+interface CreateFormData {
   name: string;
   slug: string;
-  address: string;
-  city: string;
-  country: string;
-  check_in_time: string;
-  check_out_time: string;
-  contact_phone: string;
-  contact_email: string;
 }
 
 export default function PropertySettings() {
@@ -35,32 +28,18 @@ export default function PropertySettings() {
   const { enqueueSnackbar } = useSnackbar();
   const [page, setPage] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [currentLogo, setCurrentLogo] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data } = useGetPropertiesQuery({ page: page + 1 });
   const [create] = useCreatePropertyMutation();
-  const [update] = useUpdatePropertyMutation();
   const [uploadLogo] = useUploadPropertyLogoMutation();
 
-  const { register, handleSubmit, reset } = useForm<FormData>();
+  const { register, handleSubmit, reset } = useForm<CreateFormData>();
 
   const openCreate = () => {
     reset({});
-    setEditId(null);
-    setCurrentLogo('');
-    setLogoFile(null);
-    setLogoPreview('');
-    setDialogOpen(true);
-  };
-
-  const openEdit = (p: Property) => {
-    reset(p);
-    setEditId(p.id);
-    setCurrentLogo(p.logo || '');
     setLogoFile(null);
     setLogoPreview('');
     setDialogOpen(true);
@@ -77,27 +56,18 @@ export default function PropertySettings() {
   const handleLogoRemove = () => {
     setLogoFile(null);
     setLogoPreview('');
-    setCurrentLogo('');
   };
 
-  const onSubmit = async (formData: FormData) => {
+  const onSubmit = async (formData: CreateFormData) => {
     try {
-      // Strip file fields — logo is uploaded separately via uploadLogo
-      const { logo, hero_image, ...cleanData } = formData as FormData & Record<string, unknown>;
-      let propertyId = editId;
-      if (editId) {
-        await update({ id: editId, data: cleanData }).unwrap();
-      } else {
-        const created = await create(cleanData).unwrap();
-        propertyId = created.id;
+      const created = await create(formData).unwrap();
+      if (logoFile) {
+        await uploadLogo({ id: created.id, file: logoFile }).unwrap();
       }
-      if (logoFile && propertyId) {
-        await uploadLogo({ id: propertyId, file: logoFile }).unwrap();
-      }
-      enqueueSnackbar('Guardado', { variant: 'success' });
+      enqueueSnackbar('Propiedad creada', { variant: 'success' });
       setDialogOpen(false);
     } catch {
-      enqueueSnackbar('Error al guardar', { variant: 'error' });
+      enqueueSnackbar('Error al crear propiedad', { variant: 'error' });
     }
   };
 
@@ -117,12 +87,10 @@ export default function PropertySettings() {
     { id: 'active', label: 'Activa', render: (r) => r.is_active ? 'Sí' : 'No' },
     {
       id: 'actions', label: '', render: (r) => (
-        <Button size="small" onClick={(e) => { e.stopPropagation(); openEdit(r); }}>Editar</Button>
+        <Button size="small" onClick={(e) => { e.stopPropagation(); navigate(`/settings/properties/${r.id}`); }}>Editar</Button>
       ),
     },
   ];
-
-  const displayLogo = logoPreview || currentLogo;
 
   return (
     <Box maxWidth={900}>
@@ -136,51 +104,29 @@ export default function PropertySettings() {
       </Box>
       <DataTable columns={columns} rows={data?.results ?? []} total={data?.count ?? 0} page={page} onPageChange={setPage} rowKey={(r) => r.id} />
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editId ? 'Editar Propiedad' : 'Nueva Propiedad'}</DialogTitle>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Nueva Propiedad</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <Grid container spacing={2}>
-              {/* Basic info */}
-              <Grid item xs={8}><TextField {...register('name')} label="Nombre" fullWidth required /></Grid>
-              <Grid item xs={4}><TextField {...register('slug')} label="Slug" fullWidth required /></Grid>
-              <Grid item xs={12}><TextField {...register('address')} label="Dirección" fullWidth /></Grid>
-              <Grid item xs={6}><TextField {...register('city')} label="Ciudad" fullWidth /></Grid>
-              <Grid item xs={6}><TextField {...register('country')} label="País" fullWidth /></Grid>
-              <Grid item xs={6}><TextField {...register('check_in_time')} label="Hora check-in" type="time" fullWidth InputLabelProps={{ shrink: true }} /></Grid>
-              <Grid item xs={6}><TextField {...register('check_out_time')} label="Hora check-out" type="time" fullWidth InputLabelProps={{ shrink: true }} /></Grid>
-              <Grid item xs={6}><TextField {...register('contact_phone')} label="Teléfono contacto" fullWidth /></Grid>
-              <Grid item xs={6}><TextField {...register('contact_email')} label="Email contacto" type="email" fullWidth /></Grid>
-
-              {/* Logo */}
+              <Grid item xs={12}><TextField {...register('name')} label="Nombre" fullWidth required /></Grid>
+              <Grid item xs={12}><TextField {...register('slug')} label="Slug" fullWidth required /></Grid>
               <Grid item xs={12}>
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary" mb={1}>Logo</Typography>
+                <Typography variant="subtitle2" color="text.secondary" mb={1}>Logo (opcional)</Typography>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar
-                    src={displayLogo || undefined}
-                    sx={{ width: 64, height: 64, bgcolor: 'grey.200' }}
+                    src={logoPreview || undefined}
+                    sx={{ width: 48, height: 48, bgcolor: 'grey.200' }}
                     variant="rounded"
                   >
-                    {!displayLogo && 'Logo'}
+                    {!logoPreview && 'Logo'}
                   </Avatar>
                   <Box>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={handleLogoSelect}
-                    />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<UploadIcon />}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {displayLogo ? 'Cambiar' : 'Subir logo'}
+                    <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleLogoSelect} />
+                    <Button size="small" variant="outlined" startIcon={<UploadIcon />} onClick={() => fileInputRef.current?.click()}>
+                      {logoPreview ? 'Cambiar' : 'Subir'}
                     </Button>
-                    {displayLogo && (
+                    {logoPreview && (
                       <IconButton size="small" color="error" onClick={handleLogoRemove} sx={{ ml: 1 }}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -188,12 +134,11 @@ export default function PropertySettings() {
                   </Box>
                 </Box>
               </Grid>
-
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button type="submit" variant="contained">Guardar</Button>
+            <Button type="submit" variant="contained">Crear</Button>
           </DialogActions>
         </form>
       </Dialog>
