@@ -40,6 +40,10 @@ class TodayView(APIView):
 
         in_house = res_qs.filter(operational_status="check_in").count()
 
+        incomplete_reservations = res_qs.filter(
+            operational_status="incomplete",
+        ).count()
+
         pending_reservations = res_qs.filter(
             operational_status="pending",
         ).count()
@@ -109,7 +113,7 @@ class TodayView(APIView):
             ).count()
             upcoming_demand = Reservation.objects.filter(
                 room_type=rt,
-                operational_status__in=["pending", "confirmed"],
+                operational_status__in=["incomplete", "pending", "confirmed"],
                 check_in_date__gte=today,
                 check_in_date__lt=next_7,
             ).count()
@@ -158,7 +162,7 @@ class TodayView(APIView):
         tomorrow = today + timedelta(days=1)
         unconfirmed_tomorrow = res_qs.filter(
             check_in_date=tomorrow,
-            operational_status="pending",
+            operational_status__in=["incomplete", "pending"],
         ).count()
         if unconfirmed_tomorrow:
             alerts.append({
@@ -174,6 +178,7 @@ class TodayView(APIView):
                 "check_ins_today": check_ins_today,
                 "check_outs_today": check_outs_today,
                 "in_house": in_house,
+                "incomplete": incomplete_reservations,
                 "pending": pending_reservations,
             },
             "rooms": {

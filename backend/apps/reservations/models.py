@@ -13,6 +13,7 @@ def generate_confirmation_code():
 class Reservation(TenantModel):
     # --- Operational status ---
     class OperationalStatus(models.TextChoices):
+        INCOMPLETE = "incomplete", "Incompleta"
         PENDING = "pending", "Pendiente"
         CONFIRMED = "confirmed", "Confirmada"
         CHECK_IN = "check_in", "Check-in"
@@ -89,7 +90,7 @@ class Reservation(TenantModel):
     operational_status = models.CharField(
         max_length=20,
         choices=OperationalStatus.choices,
-        default=OperationalStatus.PENDING,
+        default=OperationalStatus.INCOMPLETE,
     )
     financial_status = models.CharField(
         max_length=20,

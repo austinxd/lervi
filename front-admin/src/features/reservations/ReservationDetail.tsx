@@ -244,13 +244,28 @@ export default function ReservationDetail() {
       </Card>
 
       {/* Actions bar */}
-      {['pending', 'confirmed', 'check_in'].includes(status) && (
+      {['incomplete', 'pending', 'confirmed', 'check_in'].includes(status) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
               Acciones
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {status === 'incomplete' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() =>
+                    openAction(
+                      'cancel',
+                      'Cancelar reservacion',
+                      'Esta seguro de que desea cancelar esta reservacion incompleta?',
+                    )
+                  }
+                >
+                  Cancelar
+                </Button>
+              )}
               {status === 'pending' && (
                 <>
                   <Button

@@ -190,7 +190,7 @@ export interface Guest {
 }
 
 // ---- Reservation ----
-export type OperationalStatus = 'pending' | 'confirmed' | 'check_in' | 'check_out' | 'cancelled' | 'no_show';
+export type OperationalStatus = 'incomplete' | 'pending' | 'confirmed' | 'check_in' | 'check_out' | 'cancelled' | 'no_show';
 export type FinancialStatus = 'pending_payment' | 'partial' | 'paid' | 'partial_refund' | 'refunded';
 export type OriginType = 'website' | 'walk_in' | 'phone' | 'ota' | 'other';
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'online';
@@ -422,6 +422,7 @@ export interface DashboardToday {
     check_ins_today: number;
     check_outs_today: number;
     in_house: number;
+    incomplete: number;
     pending: number;
   };
   rooms: {

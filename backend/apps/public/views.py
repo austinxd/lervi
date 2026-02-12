@@ -170,9 +170,10 @@ class AvailabilityView(APIView):
 
         # Active reservation statuses
         active_statuses = [
+            Reservation.OperationalStatus.INCOMPLETE,
+            Reservation.OperationalStatus.PENDING,
             Reservation.OperationalStatus.CONFIRMED,
             Reservation.OperationalStatus.CHECK_IN,
-            Reservation.OperationalStatus.PENDING,
         ]
 
         results = []
@@ -297,9 +298,10 @@ class CreateReservationView(APIView):
 
         # Check availability
         active_statuses = [
+            Reservation.OperationalStatus.INCOMPLETE,
+            Reservation.OperationalStatus.PENDING,
             Reservation.OperationalStatus.CONFIRMED,
             Reservation.OperationalStatus.CHECK_IN,
-            Reservation.OperationalStatus.PENDING,
         ]
         eligible_room_ids = set(
             Room.objects.filter(property=prop, room_types=room_type).values_list("id", flat=True)
@@ -379,7 +381,7 @@ class CreateReservationView(APIView):
             origin_type=Reservation.OriginType.WEBSITE,
             origin_metadata={"source": "front-pagina"},
             special_requests=data.get("special_requests", ""),
-            operational_status=Reservation.OperationalStatus.PENDING,
+            operational_status=Reservation.OperationalStatus.INCOMPLETE,
             financial_status=Reservation.FinancialStatus.PENDING_PAYMENT,
             payment_deadline=payment_deadline,
         )
@@ -425,9 +427,10 @@ class CreateGroupReservationView(APIView):
         )
 
         active_statuses = [
+            Reservation.OperationalStatus.INCOMPLETE,
+            Reservation.OperationalStatus.PENDING,
             Reservation.OperationalStatus.CONFIRMED,
             Reservation.OperationalStatus.CHECK_IN,
-            Reservation.OperationalStatus.PENDING,
         ]
 
         reservations = []
@@ -512,7 +515,7 @@ class CreateGroupReservationView(APIView):
                     origin_type=Reservation.OriginType.WEBSITE,
                     origin_metadata={"source": "front-pagina", "group": True},
                     special_requests=data.get("special_requests", ""),
-                    operational_status=Reservation.OperationalStatus.PENDING,
+                    operational_status=Reservation.OperationalStatus.INCOMPLETE,
                     financial_status=Reservation.FinancialStatus.PENDING_PAYMENT,
                     payment_deadline=payment_deadline,
                     group_code=group_code,
@@ -606,9 +609,9 @@ class VoucherUploadView(APIView):
         )
 
         # Validate status
-        if reservation.operational_status != Reservation.OperationalStatus.PENDING:
+        if reservation.operational_status != Reservation.OperationalStatus.INCOMPLETE:
             return Response(
-                {"detail": "Solo se puede subir voucher para reservas pendientes."},
+                {"detail": "Solo se puede subir voucher para reservas incompletas."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -650,10 +653,11 @@ class VoucherUploadView(APIView):
             )
 
         reservation.voucher_image = voucher
-        reservation.save(update_fields=["voucher_image", "updated_at"])
+        reservation.operational_status = Reservation.OperationalStatus.PENDING
+        reservation.save(update_fields=["voucher_image", "operational_status", "updated_at"])
 
         return Response(
-            {"detail": "Comprobante subido exitosamente."},
+            {"detail": "Comprobante subido exitosamente. Pendiente de confirmacion."},
             status=status.HTTP_200_OK,
         )
 
@@ -739,9 +743,12 @@ class GuestCancelReservationView(APIView):
             guest=request.guest,
         )
 
-        if reservation.operational_status != Reservation.OperationalStatus.PENDING:
+        if reservation.operational_status not in (
+            Reservation.OperationalStatus.INCOMPLETE,
+            Reservation.OperationalStatus.PENDING,
+        ):
             return Response(
-                {"detail": "Solo se pueden cancelar reservas pendientes."},
+                {"detail": "Solo se pueden cancelar reservas incompletas o pendientes."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

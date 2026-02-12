@@ -10,7 +10,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         now = timezone.now()
         expired = Reservation.objects.filter(
-            operational_status=Reservation.OperationalStatus.PENDING,
+            operational_status=Reservation.OperationalStatus.INCOMPLETE,
             payment_deadline__lt=now,
             voucher_image="",
         )

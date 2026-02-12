@@ -1,6 +1,7 @@
 type ChipInfo = { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' };
 
 export const OPERATIONAL_STATUS: Record<string, ChipInfo> = {
+  incomplete: { label: 'Incompleta', color: 'default' },
   pending: { label: 'Pendiente', color: 'warning' },
   confirmed: { label: 'Confirmada', color: 'info' },
   check_in: { label: 'Check-in', color: 'success' },

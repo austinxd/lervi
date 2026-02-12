@@ -45,6 +45,13 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
             self.permission_classes = [HasRolePermission]
         return super().get_permissions()
 
+    def perform_create(self, serializer):
+        serializer.save(
+            organization=self.request.organization,
+            created_by=self.request.user,
+            operational_status=Reservation.OperationalStatus.CONFIRMED,
+        )
+
     def _build_context(self, request, reservation):
         return {
             "reservation": reservation,

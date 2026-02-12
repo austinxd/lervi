@@ -379,18 +379,19 @@ class Command(BaseCommand):
         )
         self.stdout.write("  + 3 reservaciones confirmadas (próximas llegadas)")
 
-        # ── Pending (sin confirmar) ──
+        # ── Incomplete (web, sin voucher) ──
         make_reservation(
             guests[9], room_types["doble-superior"], None,
             today + timedelta(days=5), today + timedelta(days=8),
-            "pending", "pending_payment", "website", Decimal("660.00"),
+            "incomplete", "pending_payment", "website", Decimal("660.00"),
         )
+        # ── Pending (subió voucher, falta confirmación admin) ──
         make_reservation(
             guests[10], room_types["familiar"], None,
             today + timedelta(days=7), today + timedelta(days=10),
-            "pending", "pending_payment", "phone", Decimal("900.00"),
+            "pending", "pending_payment", "website", Decimal("900.00"),
         )
-        self.stdout.write("  + 2 reservaciones pendientes")
+        self.stdout.write("  + 1 reservacion incompleta, 1 pendiente")
 
         # ── Checked-out (completadas recientes) ──
         r102 = self._get_room(rooms, "102")
