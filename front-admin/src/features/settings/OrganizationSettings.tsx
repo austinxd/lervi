@@ -33,6 +33,7 @@ export default function OrganizationSettings() {
       <Box display="flex" gap={1} mb={3}>
         <Button variant="contained">Organización</Button>
         <Button variant="outlined" onClick={() => navigate('/settings/properties')}>Propiedades</Button>
+        <Button variant="outlined" onClick={() => navigate('/settings/bank-accounts')}>Cuentas Bancarias</Button>
       </Box>
       <Card>
         <CardContent>

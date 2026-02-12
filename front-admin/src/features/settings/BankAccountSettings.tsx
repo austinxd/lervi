@@ -8,7 +8,6 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { useGetPropertiesQuery } from '../../services/organizationService';
@@ -135,13 +134,14 @@ export default function BankAccountSettings() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <IconButton onClick={() => navigate('/settings')}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 600, flex: 1 }}>
-          Cuentas Bancarias
-        </Typography>
+      <Typography variant="h5" mb={2}>Configuración</Typography>
+      <Box display="flex" gap={1} mb={3}>
+        <Button variant="outlined" onClick={() => navigate('/settings')}>Organización</Button>
+        <Button variant="outlined" onClick={() => navigate('/settings/properties')}>Propiedades</Button>
+        <Button variant="contained">Cuentas Bancarias</Button>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate} disabled={!propertyId}>
           Agregar Cuenta
         </Button>
