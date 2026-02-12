@@ -31,9 +31,6 @@ class Organization(BaseModel):
             ("premium", "Premium / Luxury"),
         ],
     )
-    theme_palette = models.CharField(max_length=30, default="navy-gold")
-    theme_primary_color = models.CharField(max_length=7, blank=True, default="")
-    theme_accent_color = models.CharField(max_length=7, blank=True, default="")
 
     # Brand identity
     social_links = models.JSONField(default=dict, blank=True)

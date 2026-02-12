@@ -1,4 +1,6 @@
 export interface TemplateConfig {
+  primaryColor: string;
+  accentColor: string;
   fontHeading: string;
   fontBody: string;
   radiusSm: string;
@@ -9,6 +11,8 @@ export interface TemplateConfig {
 
 export const TEMPLATES: Record<string, TemplateConfig> = {
   essential: {
+    primaryColor: "#1e293b",
+    accentColor: "#0d9488",
     fontHeading: "'Inter', system-ui, sans-serif",
     fontBody: "'Inter', system-ui, sans-serif",
     radiusSm: "0.5rem",
@@ -18,6 +22,8 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
       "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
   },
   signature: {
+    primaryColor: "#0f1f33",
+    accentColor: "#c9a96e",
     fontHeading: "'Playfair Display', Georgia, serif",
     fontBody: "'Inter', system-ui, sans-serif",
     radiusSm: "0.25rem",
@@ -27,6 +33,8 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
       "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap",
   },
   premium: {
+    primaryColor: "#0a0a0a",
+    accentColor: "#c4a265",
     fontHeading: "'Cormorant Garamond', Georgia, serif",
     fontBody: "'Inter', system-ui, sans-serif",
     radiusSm: "0",
@@ -36,7 +44,3 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
       "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap",
   },
 };
-
-/** Default colors when no custom colors are set */
-export const DEFAULT_PRIMARY = "#0f1f33";
-export const DEFAULT_ACCENT = "#c9a96e";

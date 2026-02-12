@@ -63,49 +63,13 @@ export default function OrganizationSettings() {
                   control={control}
                   defaultValue="signature"
                   render={({ field }) => (
-                    <TextField {...field} select label="Plantilla" fullWidth>
+                    <TextField {...field} select label="Plantilla" fullWidth helperText="Los colores y tipografía se aplican automáticamente según la plantilla">
                       <MenuItem value="essential">Essential — Boutique, limpio y directo</MenuItem>
                       <MenuItem value="signature">Signature — Experiencia inmersiva</MenuItem>
                       <MenuItem value="premium">Premium — Lujo silencioso, editorial</MenuItem>
                     </TextField>
                   )}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color primario</Typography>
-                <Box display="flex" gap={1} alignItems="center">
-                  <input
-                    type="color"
-                    {...register('theme_primary_color')}
-                    defaultValue="#0f1f33"
-                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
-                  />
-                  <TextField
-                    {...register('theme_primary_color')}
-                    size="small"
-                    placeholder="#0f1f33"
-                    fullWidth
-                    helperText="Fondos oscuros, textos, header"
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color acento</Typography>
-                <Box display="flex" gap={1} alignItems="center">
-                  <input
-                    type="color"
-                    {...register('theme_accent_color')}
-                    defaultValue="#c9a96e"
-                    style={{ width: 48, height: 40, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
-                  />
-                  <TextField
-                    {...register('theme_accent_color')}
-                    size="small"
-                    placeholder="#c9a96e"
-                    fullWidth
-                    helperText="Botones, enlaces, acentos"
-                  />
-                </Box>
               </Grid>
             </Grid>
             <Box mt={3}>

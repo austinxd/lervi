@@ -40,9 +40,6 @@ export interface OrganizationInfo {
   primary_color: string;
   secondary_color: string;
   theme_template: 'essential' | 'signature' | 'premium';
-  theme_palette: string;
-  theme_primary_color: string;
-  theme_accent_color: string;
   social_links: {
     instagram?: string;
     facebook?: string;

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { OrganizationInfo } from "./types";
 import { generateShadeScale, generateSandScale } from "./color-utils";
-import { TEMPLATES, DEFAULT_PRIMARY, DEFAULT_ACCENT } from "./themes";
+import { TEMPLATES } from "./themes";
 
 /** Map legacy template names to the new ones */
 const LEGACY_TEMPLATE_MAP: Record<string, string> = {
@@ -17,22 +17,18 @@ export function resolveTemplateKey(raw: string): string {
 
 /**
  * Resolve the full set of CSS variables for an organization's theme.
- * Always generates color scales from primary + accent hex values.
- * Falls back to defaults if no custom colors are set.
+ * Colors are determined entirely by the template — no custom color overrides.
  */
 export function resolveThemeVariables(org: OrganizationInfo): CSSProperties {
   const templateKey = resolveTemplateKey(org.theme_template);
   const template = TEMPLATES[templateKey] || TEMPLATES.signature;
 
-  const primaryHex = org.theme_primary_color || DEFAULT_PRIMARY;
-  const accentHex = org.theme_accent_color || DEFAULT_ACCENT;
-
   const vars: Record<string, string> = {};
 
-  // Generate all color scales from the two base colors
-  const primaryScale = generateShadeScale(primaryHex);
-  const accentScale = generateShadeScale(accentHex);
-  const sandScale = generateSandScale(primaryHex);
+  // Generate all color scales from the template's fixed colors
+  const primaryScale = generateShadeScale(template.primaryColor);
+  const accentScale = generateShadeScale(template.accentColor);
+  const sandScale = generateSandScale(template.primaryColor);
 
   for (const [shade, rgb] of Object.entries(primaryScale)) {
     vars[`--color-primary-${shade}-rgb`] = rgb;
