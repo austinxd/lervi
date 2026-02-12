@@ -1,7 +1,7 @@
-import type { Property } from "@/lib/types";
+import type { PropertySummary } from "@/lib/types";
 
 interface InfoSectionProps {
-  property: Property;
+  property: PropertySummary;
 }
 
 export default function InfoSection({ property }: InfoSectionProps) {

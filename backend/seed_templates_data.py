@@ -70,13 +70,17 @@ def seed():
     ]
     prop.payment_methods = ["Visa", "Mastercard", "Efectivo", "Transferencia", "Yape"]
     prop.languages = ["Español", "English", "Português"]
-    prop.social_links = {
+    prop.save()
+
+    # Update organization-level fields
+    org = prop.organization
+    org.social_links = {
         "instagram": "https://instagram.com/hotelarena",
         "facebook": "https://facebook.com/hotelarena",
         "tripadvisor": "https://tripadvisor.com/hotelarena",
         "google_maps": "https://maps.google.com/?q=-12.1196,-77.0310",
     }
-    prop.save()
+    org.save(update_fields=["social_links", "updated_at"])
     print(f"Updated property: {prop.name}")
 
     # --- Room Type data ---

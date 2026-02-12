@@ -5,12 +5,10 @@ export interface PropertyPhoto {
   sort_order: number;
 }
 
-export interface Property {
+export interface PropertySummary {
   id: string;
   name: string;
   slug: string;
-  organization_name: string;
-  currency: string;
   address: string;
   city: string;
   country: string;
@@ -20,17 +18,10 @@ export interface Property {
   check_out_time: string;
   contact_phone: string;
   contact_email: string;
+  whatsapp: string;
   policies: Record<string, unknown>;
   description: string;
   tagline: string;
-  whatsapp: string;
-  website_url: string;
-  social_links: {
-    instagram?: string;
-    facebook?: string;
-    tripadvisor?: string;
-    google_maps?: string;
-  };
   amenities: string[];
   payment_methods: string[];
   languages: string[];
@@ -38,10 +29,29 @@ export interface Property {
   hero_image: string | null;
   logo: string | null;
   photos: PropertyPhoto[];
+}
+
+export interface OrganizationInfo {
+  id: string;
+  name: string;
+  subdomain: string;
+  currency: string;
+  logo: string;
+  primary_color: string;
+  secondary_color: string;
   theme_template: 'essential' | 'signature' | 'premium';
   theme_palette: string;
   theme_primary_color: string;
   theme_accent_color: string;
+  website_url: string;
+  social_links: {
+    instagram?: string;
+    facebook?: string;
+    tripadvisor?: string;
+    google_maps?: string;
+  };
+  properties: PropertySummary[];
+  is_multi_property: boolean;
 }
 
 export interface RoomTypePhoto {
@@ -78,6 +88,8 @@ export interface RoomType {
   highlights: string[];
   cover_photo: string | null;
   photos: RoomTypePhoto[];
+  property_name: string;
+  property_slug: string;
 }
 
 export interface RoomTypeDetail extends RoomType {
@@ -102,6 +114,8 @@ export interface AvailabilityResult {
   available_rooms: number;
   nightly_prices: NightlyPrice[];
   total: string;
+  property_name: string;
+  property_slug: string;
 }
 
 export interface ReservationConfirmation {
@@ -162,4 +176,5 @@ export interface GuestReservation {
   total_amount: string;
   currency: string;
   voucher_image: string | null;
+  property_name: string;
 }

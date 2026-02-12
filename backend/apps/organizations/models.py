@@ -21,6 +21,24 @@ class Organization(BaseModel):
     subdomain = models.CharField(max_length=63, unique=True)
     custom_domain = models.CharField(max_length=255, blank=True, default="")
 
+    # Web theme (controls public website appearance)
+    theme_template = models.CharField(
+        max_length=20,
+        default="signature",
+        choices=[
+            ("essential", "Essential / Boutique"),
+            ("signature", "Signature / Experience"),
+            ("premium", "Premium / Luxury"),
+        ],
+    )
+    theme_palette = models.CharField(max_length=30, default="navy-gold")
+    theme_primary_color = models.CharField(max_length=7, blank=True, default="")
+    theme_accent_color = models.CharField(max_length=7, blank=True, default="")
+
+    # Brand identity
+    website_url = models.URLField(blank=True, default="")
+    social_links = models.JSONField(default=dict, blank=True)
+
     # Subscription
     plan = models.CharField(max_length=50, default="basic")
     is_active = models.BooleanField(default=True)
@@ -56,33 +74,12 @@ class Property(BaseModel):
     description = models.TextField(blank=True, default="")
     tagline = models.CharField(max_length=200, blank=True, default="")
     whatsapp = models.CharField(max_length=30, blank=True, default="")
-    website_url = models.URLField(blank=True, default="")
-    social_links = models.JSONField(default=dict, blank=True)
     amenities = models.JSONField(default=list, blank=True)
     payment_methods = models.JSONField(default=list, blank=True)
     languages = models.JSONField(default=list, blank=True)
     stars = models.PositiveSmallIntegerField(null=True, blank=True)
     hero_image = models.ImageField(upload_to="properties/", blank=True)
     logo = models.ImageField(upload_to="properties/logos/", blank=True)
-
-    # Theming
-    theme_template = models.CharField(
-        max_length=20,
-        default="signature",
-        choices=[
-            ("essential", "Essential / Boutique"),
-            ("signature", "Signature / Experience"),
-            ("premium", "Premium / Luxury"),
-        ],
-    )
-    theme_palette = models.CharField(max_length=30, default="navy-gold")
-    theme_primary_color = models.CharField(max_length=7, blank=True, default="")
-    theme_accent_color = models.CharField(max_length=7, blank=True, default="")
-
-    # Custom domain (e.g. www.myhotel.com)
-    custom_domain = models.CharField(
-        max_length=255, blank=True, null=True, unique=True,
-    )
 
     class Meta:
         verbose_name_plural = "properties"

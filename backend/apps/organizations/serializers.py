@@ -11,6 +11,9 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "timezone", "currency", "language",
             "logo", "primary_color", "secondary_color", "font",
             "subdomain", "custom_domain",
+            "theme_template", "theme_palette",
+            "theme_primary_color", "theme_accent_color",
+            "website_url", "social_links",
             "plan", "is_active",
             "created_at", "updated_at",
         ]
@@ -28,12 +31,9 @@ class PropertySerializer(serializers.ModelSerializer):
             "policies",
             "contact_phone", "contact_email",
             "is_active",
-            "description", "tagline", "whatsapp", "website_url",
-            "social_links", "amenities", "payment_methods", "languages",
+            "description", "tagline", "whatsapp",
+            "amenities", "payment_methods", "languages",
             "stars", "hero_image", "logo",
-            "theme_template", "theme_palette",
-            "theme_primary_color", "theme_accent_color",
-            "custom_domain",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "organization", "created_at", "updated_at"]

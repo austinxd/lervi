@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/api";
+import { getOrganizationInfo } from "@/lib/api";
 import { resolveThemeVariables, resolveTemplateKey } from "@/lib/theme-resolver";
 import { TEMPLATES } from "@/lib/themes";
 import Header from "@/components/Header";
@@ -14,12 +14,12 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const property = await getProperty(slug);
+    const org = await getOrganizationInfo(slug);
     return {
-      title: { default: property.name, template: `%s | ${property.name}` },
-      description: `${property.name} - ${property.city}. Reserve directamente al mejor precio.`,
+      title: { default: org.name, template: `%s | ${org.name}` },
+      description: `${org.name} - Reserve directamente al mejor precio.`,
       openGraph: {
-        siteName: property.name,
+        siteName: org.name,
         locale: "es_PE",
         type: "website",
       },
@@ -37,16 +37,16 @@ export default async function HotelLayout({ params, children }: Props) {
     notFound();
   }
 
-  let property;
+  let org;
   try {
-    property = await getProperty(slug);
+    org = await getOrganizationInfo(slug);
   } catch {
     notFound();
   }
 
-  const templateKey = resolveTemplateKey(property.theme_template);
+  const templateKey = resolveTemplateKey(org.theme_template);
   const template = TEMPLATES[templateKey] || TEMPLATES.signature;
-  const cssVars = resolveThemeVariables(property);
+  const cssVars = resolveThemeVariables(org);
 
   return (
     <div
@@ -55,9 +55,9 @@ export default async function HotelLayout({ params, children }: Props) {
       className="min-h-screen flex flex-col bg-sand-50"
     >
       <link href={template.googleFontsUrl} rel="stylesheet" />
-      <Header propertyName={property.name} logo={property.logo} template={templateKey} slug={slug} />
+      <Header propertyName={org.name} logo={org.logo} template={templateKey} slug={slug} />
       <main className="flex-1">{children}</main>
-      <Footer property={property} />
+      <Footer org={org} />
     </div>
   );
 }

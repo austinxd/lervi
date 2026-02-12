@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getProperty, getRoomTypeDetail } from "@/lib/api";
+import { getOrganizationInfo, getRoomTypeDetail } from "@/lib/api";
 import { VIEW_TYPE_LABELS, BATHROOM_TYPE_LABELS } from "@/lib/constants";
 import PhotoGallery from "./PhotoGallery";
 
@@ -11,13 +11,13 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, id } = await params;
   try {
-    const [property, roomType] = await Promise.all([
-      getProperty(slug),
+    const [org, roomType] = await Promise.all([
+      getOrganizationInfo(slug),
       getRoomTypeDetail(slug, id),
     ]);
     return {
       title: roomType.name,
-      description: `${roomType.name} en ${property.name}. Desde ${property.currency} ${roomType.base_price} por noche.`,
+      description: `${roomType.name} en ${org.name}. Desde ${org.currency} ${roomType.base_price} por noche.`,
       openGraph: {
         images: roomType.cover_photo ? [roomType.cover_photo] : [],
       },
@@ -29,10 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RoomTypeDetailPage({ params }: Props) {
   const { slug, id } = await params;
-  let property, roomType;
+  let org, roomType;
   try {
-    [property, roomType] = await Promise.all([
-      getProperty(slug),
+    [org, roomType] = await Promise.all([
+      getOrganizationInfo(slug),
       getRoomTypeDetail(slug, id),
     ]);
   } catch {
@@ -43,7 +43,7 @@ export default async function RoomTypeDetailPage({ params }: Props) {
     );
   }
 
-  const currency = property.currency || "PEN";
+  const currency = org.currency || "PEN";
 
   return (
     <div>

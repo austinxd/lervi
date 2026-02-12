@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Property } from "./types";
+import type { OrganizationInfo } from "./types";
 import { generateShadeScale, generateSandScale } from "./color-utils";
 import { TEMPLATES, DEFAULT_PRIMARY, DEFAULT_ACCENT } from "./themes";
 
@@ -16,16 +16,16 @@ export function resolveTemplateKey(raw: string): string {
 }
 
 /**
- * Resolve the full set of CSS variables for a property's theme.
+ * Resolve the full set of CSS variables for an organization's theme.
  * Always generates color scales from primary + accent hex values.
  * Falls back to defaults if no custom colors are set.
  */
-export function resolveThemeVariables(property: Property): CSSProperties {
-  const templateKey = resolveTemplateKey(property.theme_template);
+export function resolveThemeVariables(org: OrganizationInfo): CSSProperties {
+  const templateKey = resolveTemplateKey(org.theme_template);
   const template = TEMPLATES[templateKey] || TEMPLATES.signature;
 
-  const primaryHex = property.theme_primary_color || DEFAULT_PRIMARY;
-  const accentHex = property.theme_accent_color || DEFAULT_ACCENT;
+  const primaryHex = org.theme_primary_color || DEFAULT_PRIMARY;
+  const accentHex = org.theme_accent_color || DEFAULT_ACCENT;
 
   const vars: Record<string, string> = {};
 

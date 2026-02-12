@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getProperty, getRoomTypes } from "@/lib/api";
+import { getOrganizationInfo, getRoomTypes } from "@/lib/api";
 import RoomCard from "@/components/RoomCard";
 
 interface Props {
@@ -8,17 +8,17 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const property = await getProperty(slug);
+  const org = await getOrganizationInfo(slug);
   return {
     title: "Habitaciones",
-    description: `Tipos de habitacion en ${property.name}. Consulte precios y reserve online.`,
+    description: `Tipos de habitacion en ${org.name}. Consulte precios y reserve online.`,
   };
 }
 
 export default async function RoomTypesPage({ params }: Props) {
   const { slug } = await params;
-  const [property, roomTypes] = await Promise.all([
-    getProperty(slug),
+  const [org, roomTypes] = await Promise.all([
+    getOrganizationInfo(slug),
     getRoomTypes(slug),
   ]);
 
@@ -51,7 +51,7 @@ export default async function RoomTypesPage({ params }: Props) {
               <RoomCard
                 key={rt.id}
                 roomType={rt}
-                currency={property.currency}
+                currency={org.currency}
               />
             ))}
           </div>

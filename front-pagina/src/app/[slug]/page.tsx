@@ -1,4 +1,4 @@
-import { getProperty, getRoomTypes } from "@/lib/api";
+import { getOrganizationInfo, getRoomTypes } from "@/lib/api";
 import { resolveTemplateKey } from "@/lib/theme-resolver";
 import HeroEssential from "@/components/heroes/HeroEssential";
 import HeroSignature from "@/components/heroes/HeroSignature";
@@ -16,12 +16,24 @@ interface Props {
 
 export default async function LandingPage({ params }: Props) {
   const { slug } = await params;
-  const [property, roomTypes] = await Promise.all([
-    getProperty(slug),
+  const [org, roomTypes] = await Promise.all([
+    getOrganizationInfo(slug),
     getRoomTypes(slug),
   ]);
 
-  const template = resolveTemplateKey(property.theme_template);
+  const template = resolveTemplateKey(org.theme_template);
+
+  // For single-property orgs, use the first property's data directly
+  // For multi-property, this same page will show the first property for now
+  // (multi-property landing with property cards can be added later)
+  const property = org.properties[0];
+  if (!property) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-gray-500">No hay propiedades activas.</p>
+      </div>
+    );
+  }
 
   // Shared section elements
   const about = property.description ? (
@@ -32,7 +44,7 @@ export default async function LandingPage({ params }: Props) {
     <RoomsSection
       key="rooms"
       roomTypes={roomTypes}
-      currency={property.currency}
+      currency={org.currency}
       template={template}
     />
   );

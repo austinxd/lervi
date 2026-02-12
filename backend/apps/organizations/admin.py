@@ -34,7 +34,7 @@ class PropertyAdmin(admin.ModelAdmin):
         }),
         ("Contacto", {
             "fields": [
-                "contact_phone", "contact_email", "whatsapp", "website_url",
+                "contact_phone", "contact_email", "whatsapp",
             ],
         }),
         ("Horarios", {
@@ -43,14 +43,8 @@ class PropertyAdmin(admin.ModelAdmin):
         ("Web pública", {
             "fields": [
                 "description", "tagline", "stars", "hero_image", "logo",
-                "amenities", "social_links", "payment_methods", "languages",
+                "amenities", "payment_methods", "languages",
                 "policies",
-            ],
-        }),
-        ("Tema visual", {
-            "fields": [
-                "theme_template", "theme_palette",
-                "theme_primary_color", "theme_accent_color",
             ],
         }),
     ]

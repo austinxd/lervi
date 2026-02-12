@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.guests.models import Guest
-from apps.organizations.models import BankAccount, Property, PropertyPhoto
+from apps.organizations.models import BankAccount, Organization, Property, PropertyPhoto
 from apps.rooms.models import (
     BedConfiguration,
     BedConfigurationDetail,
@@ -16,9 +16,7 @@ class PropertyPhotoSerializer(serializers.ModelSerializer):
         fields = ["id", "image", "caption", "sort_order"]
 
 
-class PropertyInfoSerializer(serializers.ModelSerializer):
-    organization_name = serializers.CharField(source="organization.name", read_only=True)
-    currency = serializers.CharField(source="organization.currency", read_only=True)
+class PropertySummarySerializer(serializers.ModelSerializer):
     photos = PropertyPhotoSerializer(many=True, read_only=True)
 
     class Meta:
@@ -27,8 +25,6 @@ class PropertyInfoSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
-            "organization_name",
-            "currency",
             "address",
             "city",
             "country",
@@ -38,12 +34,10 @@ class PropertyInfoSerializer(serializers.ModelSerializer):
             "check_out_time",
             "contact_phone",
             "contact_email",
+            "whatsapp",
             "policies",
             "description",
             "tagline",
-            "whatsapp",
-            "website_url",
-            "social_links",
             "amenities",
             "payment_methods",
             "languages",
@@ -51,11 +45,39 @@ class PropertyInfoSerializer(serializers.ModelSerializer):
             "hero_image",
             "logo",
             "photos",
+        ]
+
+
+class OrganizationInfoSerializer(serializers.ModelSerializer):
+    properties = serializers.SerializerMethodField()
+    is_multi_property = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Organization
+        fields = [
+            "id",
+            "name",
+            "subdomain",
+            "currency",
+            "logo",
+            "primary_color",
+            "secondary_color",
             "theme_template",
             "theme_palette",
             "theme_primary_color",
             "theme_accent_color",
+            "website_url",
+            "social_links",
+            "properties",
+            "is_multi_property",
         ]
+
+    def get_properties(self, obj):
+        props = obj.properties.filter(is_active=True).prefetch_related("photos")
+        return PropertySummarySerializer(props, many=True).data
+
+    def get_is_multi_property(self, obj):
+        return obj.properties.filter(is_active=True).count() > 1
 
 
 class RoomTypePhotoSerializer(serializers.ModelSerializer):
@@ -81,6 +103,8 @@ class BedConfigurationSerializer(serializers.ModelSerializer):
 class RoomTypeListSerializer(serializers.ModelSerializer):
     photos = RoomTypePhotoSerializer(many=True, read_only=True)
     cover_photo = serializers.SerializerMethodField()
+    property_name = serializers.CharField(source="property.name", read_only=True)
+    property_slug = serializers.CharField(source="property.slug", read_only=True)
 
     class Meta:
         model = RoomType
@@ -99,6 +123,8 @@ class RoomTypeListSerializer(serializers.ModelSerializer):
             "highlights",
             "cover_photo",
             "photos",
+            "property_name",
+            "property_slug",
         ]
 
     def get_cover_photo(self, obj):
@@ -121,6 +147,8 @@ class AvailabilityResultSerializer(serializers.Serializer):
     available_rooms = serializers.IntegerField()
     nightly_prices = serializers.ListField()
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    property_name = serializers.CharField()
+    property_slug = serializers.CharField()
 
 
 class PublicReservationSerializer(serializers.Serializer):
@@ -183,3 +211,4 @@ class GuestReservationListSerializer(serializers.Serializer):
     total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     currency = serializers.CharField()
     voucher_image = serializers.CharField(allow_null=True)
+    property_name = serializers.CharField()

@@ -3,7 +3,7 @@ import type {
   BankAccount,
   GuestReservation,
   GuestSession,
-  Property,
+  OrganizationInfo,
   ReservationConfirmation,
   ReservationLookup,
   ReservationRequest,
@@ -22,12 +22,13 @@ async function fetchAPI<T>(slug: string, path: string, init?: RequestInit): Prom
   return res.json();
 }
 
-export async function getProperty(slug: string): Promise<Property> {
+export async function getOrganizationInfo(slug: string): Promise<OrganizationInfo> {
   return fetchAPI(slug, "/info/");
 }
 
-export async function getRoomTypes(slug: string): Promise<RoomType[]> {
-  return fetchAPI(slug, "/room-types/");
+export async function getRoomTypes(slug: string, propertySlug?: string): Promise<RoomType[]> {
+  const params = propertySlug ? `?property=${propertySlug}` : "";
+  return fetchAPI(slug, `/room-types/${params}`);
 }
 
 export async function getRoomTypeDetail(
@@ -45,7 +46,8 @@ export async function searchAvailability(
   checkIn: string,
   checkOut: string,
   adults: number,
-  children: number
+  children: number,
+  propertySlug?: string
 ): Promise<AvailabilityResult[]> {
   const params = new URLSearchParams({
     check_in: checkIn,
@@ -53,6 +55,7 @@ export async function searchAvailability(
     adults: String(adults),
     children: String(children),
   });
+  if (propertySlug) params.set("property", propertySlug);
   const res = await fetch(`${PUBLIC_API}/${slug}/availability/?${params}`);
   if (!res.ok) throw new Error("Error al buscar disponibilidad");
   return res.json();

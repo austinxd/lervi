@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!slug) {
-    return new NextResponse("Property not found", { status: 404 });
+    return new NextResponse("Not found", { status: 404 });
   }
 
   // Rewrite: /habitaciones → /hotel-arena-blanca/habitaciones

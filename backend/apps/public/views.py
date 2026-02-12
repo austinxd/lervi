@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.guests.models import Guest
-from apps.organizations.models import BankAccount, Property
+from apps.organizations.models import BankAccount, Organization, Property
 from apps.pricing.engine import calculate_nightly_prices, calculate_total
 from apps.reservations.models import Reservation
 from apps.rooms.models import Room, RoomType
@@ -21,7 +21,7 @@ from .serializers import (
     AvailabilityResultSerializer,
     GuestLoginSerializer,
     GuestReservationListSerializer,
-    PropertyInfoSerializer,
+    OrganizationInfoSerializer,
     PublicBankAccountSerializer,
     PublicReservationSerializer,
     ReservationConfirmationSerializer,
@@ -30,16 +30,18 @@ from .serializers import (
 )
 
 
-def get_property(slug):
+def get_organization(org_slug):
     return get_object_or_404(
-        Property.objects.select_related("organization"),
-        slug=slug,
-        is_active=True,
+        Organization, subdomain=org_slug, is_active=True
     )
 
 
+def get_org_properties(org):
+    return Property.objects.filter(organization=org, is_active=True)
+
+
 class ResolveDomainView(APIView):
-    """Resolve a hostname to a property slug."""
+    """Resolve a hostname to an organization slug."""
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -50,40 +52,48 @@ class ResolveDomainView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Try custom_domain first
-        prop = Property.objects.filter(custom_domain__iexact=host, is_active=True).first()
-        if not prop:
+        # Try custom_domain on Organization first
+        org = Organization.objects.filter(
+            custom_domain__iexact=host, is_active=True
+        ).first()
+        if not org:
             # Try subdomain (e.g., "hotel-arena-blanca" from "hotel-arena-blanca.lervi.com")
             subdomain = host.split(".")[0]
-            prop = Property.objects.filter(slug=subdomain, is_active=True).first()
-        if not prop:
+            org = Organization.objects.filter(
+                subdomain=subdomain, is_active=True
+            ).first()
+        if not org:
             return Response(
-                {"detail": "Propiedad no encontrada para este dominio."},
+                {"detail": "Organización no encontrada para este dominio."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response({"slug": prop.slug, "name": prop.name})
+        return Response({"slug": org.subdomain, "name": org.name})
 
 
-class PropertyInfoView(APIView):
+class OrganizationInfoView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug):
-        prop = get_object_or_404(
-            Property.objects.select_related("organization").prefetch_related("photos"),
-            slug=property_slug,
-            is_active=True,
-        )
-        serializer = PropertyInfoSerializer(prop)
+    def get(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = OrganizationInfoSerializer(org)
         return Response(serializer.data)
 
 
 class RoomTypeListView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug):
-        prop = get_property(property_slug)
+    def get(self, request, org_slug):
+        org = get_organization(org_slug)
+        properties = get_org_properties(org)
+
+        # Optional property filter
+        property_slug = request.query_params.get("property")
+        if property_slug:
+            properties = properties.filter(slug=property_slug)
+
         room_types = (
-            RoomType.objects.filter(property=prop, is_active=True)
+            RoomType.objects.filter(property__in=properties, is_active=True)
+            .select_related("property")
             .prefetch_related("photos")
         )
         serializer = RoomTypeListSerializer(room_types, many=True)
@@ -93,14 +103,15 @@ class RoomTypeListView(APIView):
 class RoomTypeDetailView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug, room_type_id):
-        prop = get_property(property_slug)
+    def get(self, request, org_slug, room_type_id):
+        org = get_organization(org_slug)
+        properties = get_org_properties(org)
         room_type = get_object_or_404(
-            RoomType.objects.prefetch_related(
+            RoomType.objects.select_related("property").prefetch_related(
                 "photos", "bed_configurations__details"
             ),
             id=room_type_id,
-            property=prop,
+            property__in=properties,
             is_active=True,
         )
         serializer = RoomTypeDetailSerializer(room_type)
@@ -110,8 +121,14 @@ class RoomTypeDetailView(APIView):
 class AvailabilityView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug):
-        prop = get_property(property_slug)
+    def get(self, request, org_slug):
+        org = get_organization(org_slug)
+        properties = get_org_properties(org)
+
+        # Optional property filter
+        property_slug = request.query_params.get("property")
+        if property_slug:
+            properties = properties.filter(slug=property_slug)
 
         check_in = request.query_params.get("check_in")
         check_out = request.query_params.get("check_out")
@@ -145,12 +162,6 @@ class AvailabilityView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        room_types = RoomType.objects.filter(
-            property=prop,
-            is_active=True,
-            max_adults__gte=adults,
-        ).prefetch_related("photos")
-
         # Active reservation statuses
         active_statuses = [
             Reservation.OperationalStatus.CONFIRMED,
@@ -159,51 +170,57 @@ class AvailabilityView(APIView):
         ]
 
         results = []
-        for rt in room_types:
-            # Rooms that can serve this type
-            eligible_room_ids = set(
-                Room.objects.filter(property=prop, room_types=rt).values_list("id", flat=True)
-            )
-            total_rooms = len(eligible_room_ids)
+        for prop in properties:
+            room_types = RoomType.objects.filter(
+                property=prop,
+                is_active=True,
+                max_adults__gte=adults,
+            ).select_related("property").prefetch_related("photos")
 
-            # Rooms already assigned to overlapping reservations (for ANY type)
-            busy_room_ids = set(
-                Reservation.objects.filter(
+            for rt in room_types:
+                eligible_room_ids = set(
+                    Room.objects.filter(property=prop, room_types=rt).values_list("id", flat=True)
+                )
+                total_rooms = len(eligible_room_ids)
+
+                busy_room_ids = set(
+                    Reservation.objects.filter(
+                        property=prop,
+                        room_id__in=eligible_room_ids,
+                        operational_status__in=active_statuses,
+                        check_in_date__lt=check_out_date,
+                        check_out_date__gt=check_in_date,
+                    ).values_list("room_id", flat=True)
+                )
+
+                unassigned_count = Reservation.objects.filter(
                     property=prop,
-                    room_id__in=eligible_room_ids,
+                    room_type=rt,
+                    room__isnull=True,
                     operational_status__in=active_statuses,
                     check_in_date__lt=check_out_date,
                     check_out_date__gt=check_in_date,
-                ).values_list("room_id", flat=True)
-            )
+                ).count()
 
-            # Unassigned reservations for this specific type
-            unassigned_count = Reservation.objects.filter(
-                property=prop,
-                room_type=rt,
-                room__isnull=True,
-                operational_status__in=active_statuses,
-                check_in_date__lt=check_out_date,
-                check_out_date__gt=check_in_date,
-            ).count()
+                available = max(0, total_rooms - len(busy_room_ids) - unassigned_count)
 
-            available = max(0, total_rooms - len(busy_room_ids) - unassigned_count)
+                if available > 0:
+                    nightly_prices = calculate_nightly_prices(
+                        property_obj=prop,
+                        room_type=rt,
+                        check_in=check_in_date,
+                        check_out=check_out_date,
+                    )
+                    total = calculate_total(nightly_prices)
 
-            if available > 0:
-                nightly_prices = calculate_nightly_prices(
-                    property_obj=prop,
-                    room_type=rt,
-                    check_in=check_in_date,
-                    check_out=check_out_date,
-                )
-                total = calculate_total(nightly_prices)
-
-                results.append({
-                    "room_type": rt,
-                    "available_rooms": available,
-                    "nightly_prices": nightly_prices,
-                    "total": total,
-                })
+                    results.append({
+                        "room_type": rt,
+                        "available_rooms": available,
+                        "nightly_prices": nightly_prices,
+                        "total": total,
+                        "property_name": prop.name,
+                        "property_slug": prop.slug,
+                    })
 
         serializer = AvailabilityResultSerializer(results, many=True)
         return Response(serializer.data)
@@ -212,19 +229,21 @@ class AvailabilityView(APIView):
 class CreateReservationView(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, request, property_slug):
-        prop = get_property(property_slug)
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
         serializer = PublicReservationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Validate room type
+        # Resolve room type within org's properties
+        properties = get_org_properties(org)
         room_type = get_object_or_404(
             RoomType,
             id=data["room_type_id"],
-            property=prop,
+            property__in=properties,
             is_active=True,
         )
+        prop = room_type.property
 
         # Validate capacity
         if data["adults"] > room_type.max_adults:
@@ -278,7 +297,6 @@ class CreateReservationView(APIView):
         total = calculate_total(nightly_prices)
 
         # Get or create guest
-        org = prop.organization
         guest, _ = Guest.objects.get_or_create(
             organization=org,
             email=data["email"],
@@ -339,13 +357,14 @@ class ReservationLookupView(APIView):
     """Consultar reserva por código de confirmación."""
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug, confirmation_code):
-        prop = get_property(property_slug)
+    def get(self, request, org_slug, confirmation_code):
+        org = get_organization(org_slug)
         reservation = get_object_or_404(
-            Reservation.objects.select_related("room_type", "guest"),
-            property=prop,
+            Reservation.objects.select_related("room_type", "guest", "property"),
+            organization=org,
             confirmation_code=confirmation_code.upper(),
         )
+        prop = reservation.property
         data = {
             "confirmation_code": reservation.confirmation_code,
             "check_in_date": reservation.check_in_date,
@@ -369,12 +388,19 @@ class ReservationLookupView(APIView):
 
 
 class BankAccountListView(APIView):
-    """Lista de cuentas bancarias activas de una propiedad (público)."""
+    """Lista de cuentas bancarias activas (público)."""
     permission_classes = [AllowAny]
 
-    def get(self, request, property_slug):
-        prop = get_property(property_slug)
-        accounts = BankAccount.objects.filter(property=prop, is_active=True)
+    def get(self, request, org_slug):
+        org = get_organization(org_slug)
+        properties = get_org_properties(org)
+
+        # Optional property filter
+        property_slug = request.query_params.get("property")
+        if property_slug:
+            properties = properties.filter(slug=property_slug)
+
+        accounts = BankAccount.objects.filter(property__in=properties, is_active=True)
         serializer = PublicBankAccountSerializer(accounts, many=True)
         return Response(serializer.data)
 
@@ -384,11 +410,11 @@ class VoucherUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser]
 
-    def post(self, request, property_slug, confirmation_code):
-        prop = get_property(property_slug)
+    def post(self, request, org_slug, confirmation_code):
+        org = get_organization(org_slug)
         reservation = get_object_or_404(
             Reservation,
-            property=prop,
+            organization=org,
             confirmation_code=confirmation_code.upper(),
         )
 
@@ -449,14 +475,14 @@ class GuestLoginView(APIView):
     """Login de huésped con tipo y número de documento."""
     permission_classes = [AllowAny]
 
-    def post(self, request, property_slug):
-        prop = get_property(property_slug)
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
         serializer = GuestLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
         guest = Guest.objects.filter(
-            organization=prop.organization,
+            organization=org,
             document_type=data["document_type"],
             document_number=data["document_number"],
         ).first()
@@ -484,15 +510,15 @@ class GuestLoginView(APIView):
 
 
 class GuestReservationsView(APIView):
-    """Lista de reservas de un huésped autenticado."""
+    """Lista de reservas de un huésped autenticado (todas las properties de la org)."""
     permission_classes = [IsAuthenticatedGuest]
 
-    def get(self, request, property_slug):
-        prop = get_property(property_slug)
+    def get(self, request, org_slug):
+        org = get_organization(org_slug)
         reservations = Reservation.objects.filter(
-            property=prop,
+            organization=org,
             guest=request.guest,
-        ).select_related("room_type").order_by("-check_in_date")
+        ).select_related("room_type", "property").order_by("-check_in_date")
 
         results = []
         for r in reservations:
@@ -506,6 +532,7 @@ class GuestReservationsView(APIView):
                 "total_amount": r.total_amount,
                 "currency": r.currency,
                 "voucher_image": r.voucher_image.url if r.voucher_image else None,
+                "property_name": r.property.name,
             })
 
         serializer = GuestReservationListSerializer(results, many=True)
@@ -516,11 +543,11 @@ class GuestCancelReservationView(APIView):
     """Cancelar una reserva pendiente del huésped."""
     permission_classes = [IsAuthenticatedGuest]
 
-    def post(self, request, property_slug, confirmation_code):
-        prop = get_property(property_slug)
+    def post(self, request, org_slug, confirmation_code):
+        org = get_organization(org_slug)
         reservation = get_object_or_404(
             Reservation,
-            property=prop,
+            organization=org,
             confirmation_code=confirmation_code.upper(),
             guest=request.guest,
         )
