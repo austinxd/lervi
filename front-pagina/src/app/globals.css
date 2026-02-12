@@ -167,9 +167,8 @@
 }
 
 /* ============================================
-   TEMPLATE: PREMIUM — Le Kaila inspired luxury
-   Full dark mode: black bg, white/gold text
-   Only targets custom classes & HTML elements
+   TEMPLATE: PREMIUM — Dark luxury, editorial
+   Full dark mode: near-black bg, white/gold text
    ============================================ */
 
 /* --- Dark foundation --- */
@@ -200,14 +199,42 @@
   letter-spacing: 0.35em;
   font-weight: 300;
 }
-[data-template="premium"] h3 {
-  color: rgba(255,255,255,0.9);
+[data-template="premium"] h1,
+[data-template="premium"] h2,
+[data-template="premium"] h3,
+[data-template="premium"] h4 {
+  color: rgba(255,255,255,0.92);
 }
 [data-template="premium"] p {
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.5);
+}
+[data-template="premium"] label {
+  color: rgba(255,255,255,0.5);
 }
 [data-template="premium"] section {
   border-color: rgba(255,255,255,0.06);
+}
+
+/* --- Tailwind text utility overrides for dark mode --- */
+[data-template="premium"] main .text-primary-900 { color: rgba(255,255,255,0.92) !important; }
+[data-template="premium"] main .text-primary-800 { color: rgba(255,255,255,0.8) !important; }
+[data-template="premium"] main .text-primary-700 { color: rgba(255,255,255,0.65) !important; }
+[data-template="premium"] main .text-primary-500 { color: rgba(255,255,255,0.55) !important; }
+[data-template="premium"] main .text-gray-800 { color: rgba(255,255,255,0.85) !important; }
+[data-template="premium"] main .text-gray-700 { color: rgba(255,255,255,0.7) !important; }
+[data-template="premium"] main .text-gray-600 { color: rgba(255,255,255,0.55) !important; }
+[data-template="premium"] main .text-gray-500 { color: rgba(255,255,255,0.45) !important; }
+[data-template="premium"] main .text-gray-400 { color: rgba(255,255,255,0.35) !important; }
+[data-template="premium"] main .text-gray-300 { color: rgba(255,255,255,0.25) !important; }
+
+/* --- Prices & numbers: use body font (Inter) not decorative serif --- */
+[data-template="premium"] main .text-3xl.font-serif,
+[data-template="premium"] main .text-2xl.font-serif,
+[data-template="premium"] main .text-xl.font-serif {
+  font-family: var(--font-body) !important;
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  color: rgba(255,255,255,0.92) !important;
 }
 
 /* --- Buttons: ghost on dark --- */
@@ -241,6 +268,22 @@
   transform: none;
 }
 
+/* --- Inner-page white cards to dark --- */
+[data-template="premium"] main .bg-white {
+  background-color: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+}
+
+/* --- Background overrides --- */
+[data-template="premium"] main .bg-sand-50 { background-color: #0a0a0a !important; }
+[data-template="premium"] main .bg-primary-100 { background-color: rgba(255,255,255,0.04) !important; }
+[data-template="premium"] main .bg-primary-900 { background-color: #050505 !important; }
+[data-template="premium"] main .bg-red-50 { background-color: rgba(220,38,38,0.08) !important; }
+[data-template="premium"] main .border-sand-200 { border-color: rgba(255,255,255,0.08) !important; }
+[data-template="premium"] main .border-gray-200 { border-color: rgba(255,255,255,0.08) !important; }
+[data-template="premium"] main .shadow-sm { box-shadow: none !important; }
+
 /* --- Divider --- */
 [data-template="premium"] .divider-gold {
   width: 2rem;
@@ -255,17 +298,15 @@
   border-color: rgba(255,255,255,0.12);
   color: rgba(255,255,255,0.9);
 }
+[data-template="premium"] .input-field option {
+  background-color: #1a1a1a;
+  color: rgba(255,255,255,0.9);
+}
 [data-template="premium"] .label-field {
   color: rgba(255,255,255,0.5);
 }
 
-/* --- Premium: force inner-page white cards to dark --- */
-[data-template="premium"] main .bg-white {
-  background-color: rgba(255,255,255,0.03) !important;
-  border-color: rgba(255,255,255,0.08) !important;
-}
-
-/* --- Premium dark overrides for custom classes --- */
+/* --- Custom classes --- */
 [data-template="premium"] .section-alt-bg {
   background-color: #0f0f0f;
 }
@@ -277,6 +318,14 @@
 }
 [data-template="premium"] .group:hover .info-icon-bg-hover {
   background-color: rgba(255,255,255,0.1);
+}
+
+/* --- Accent colors stay visible --- */
+[data-template="premium"] main .text-accent-600 {
+  color: rgb(var(--color-accent-400-rgb)) !important;
+}
+[data-template="premium"] main .text-accent-700 {
+  color: rgb(var(--color-accent-500-rgb)) !important;
 }
 
 /* Premium animations */
