@@ -93,6 +93,13 @@ server {
     listen 80 default_server;
     server_name *.lervi.io;
 
+    # Static assets — servidos directo por nginx (no pasan por Node.js)
+    location /_next/static/ {
+        alias /srv/lervi/front-pagina/.next/static/;
+        expires 365d;
+        add_header Cache-Control "public, immutable";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3100;
         proxy_http_version 1.1;
