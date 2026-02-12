@@ -61,27 +61,41 @@ export default function AvailabilityClient({ slug }: Props) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-sand-200 p-8 -mt-20 relative z-10 mb-12">
+        <div className="bg-white rounded-lg shadow-lg border border-sand-200 p-8 -mt-20 relative z-10 mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-            <div>
+            <div className="lg:col-span-1">
               <label className="label-field">Fecha de entrada</label>
-              <input
-                type="date"
-                value={checkIn}
-                min={today}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="input-field"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  value={checkIn}
+                  min={today}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              {checkIn && (
+                <p className="text-xs text-gray-400 mt-1.5 font-sans">
+                  {new Date(checkIn + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              )}
             </div>
-            <div>
+            <div className="lg:col-span-1">
               <label className="label-field">Fecha de salida</label>
-              <input
-                type="date"
-                value={checkOut}
-                min={checkIn || today}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="input-field"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  value={checkOut}
+                  min={checkIn || today}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              {checkOut && (
+                <p className="text-xs text-gray-400 mt-1.5 font-sans">
+                  {new Date(checkOut + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              )}
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
@@ -116,7 +130,7 @@ export default function AvailabilityClient({ slug }: Props) {
             <button
               onClick={handleSearch}
               disabled={!checkIn || !checkOut || loading}
-              className="btn-primary h-[48px] disabled:opacity-50"
+              className="btn-primary h-[48px] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <svg
@@ -139,10 +153,23 @@ export default function AvailabilityClient({ slug }: Props) {
                   />
                 </svg>
               ) : (
-                "Buscar"
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                  </svg>
+                  Buscar
+                </>
               )}
             </button>
           </div>
+          {checkIn && checkOut && (
+            <div className="mt-4 pt-4 border-t border-sand-100 flex items-center gap-2 text-xs text-gray-400 font-sans">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+              </svg>
+              {Math.max(0, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))} noche(s)
+            </div>
+          )}
         </div>
 
         {/* Error */}
