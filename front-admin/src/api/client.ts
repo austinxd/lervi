@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const client = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -54,7 +54,7 @@ client.interceptors.response.use(
       const refreshToken = Cookies.get('refresh_token');
       if (!refreshToken) throw new Error('No refresh token');
 
-      const { data } = await axios.post('/api/v1/auth/refresh/', { refresh: refreshToken });
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/refresh/`, { refresh: refreshToken });
       Cookies.set('access_token', data.access, { sameSite: 'Lax' });
       if (data.refresh) {
         Cookies.set('refresh_token', data.refresh, { sameSite: 'Lax' });
