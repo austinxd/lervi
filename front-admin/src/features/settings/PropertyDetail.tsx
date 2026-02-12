@@ -21,6 +21,13 @@ import {
   useAddPropertyPhotoMutation,
   useDeletePropertyPhotoMutation,
 } from '../../services/organizationService';
+import {
+  useGetPropertyBankAccountsQuery,
+  useCreatePropertyBankAccountMutation,
+  useUpdatePropertyBankAccountMutation,
+  useDeletePropertyBankAccountMutation,
+} from '../../services/bankAccountService';
+import BankAccountTable from './BankAccountSettings';
 
 interface BasicFormData {
   name: string;
@@ -53,6 +60,10 @@ export default function PropertyDetail() {
   const [uploadHero] = useUploadPropertyHeroMutation();
   const [addPhoto] = useAddPropertyPhotoMutation();
   const [deletePhoto] = useDeletePropertyPhotoMutation();
+  const { data: propertyAccounts = [], isLoading: accountsLoading } = useGetPropertyBankAccountsQuery(id!);
+  const [createPropertyAccount] = useCreatePropertyBankAccountMutation();
+  const [updatePropertyAccount] = useUpdatePropertyBankAccountMutation();
+  const [deletePropertyAccount] = useDeletePropertyBankAccountMutation();
 
   // Refs for file inputs
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -477,7 +488,20 @@ export default function PropertyDetail() {
         </CardContent>
       </Card>
 
-      {/* Card 4: Galería de fotos */}
+      {/* Card 4: Cuentas bancarias propias */}
+      <Box sx={{ mb: 3 }}>
+        <BankAccountTable
+          accounts={propertyAccounts}
+          isLoading={accountsLoading}
+          title="Cuentas bancarias (solo esta propiedad)"
+          emptyMessage="Sin cuentas propias — usa las de la organizacion"
+          onCreate={async (data) => { await createPropertyAccount({ propertyId: property.id, data }).unwrap(); }}
+          onUpdate={async (accountId, data) => { await updatePropertyAccount({ propertyId: property.id, id: accountId, data }).unwrap(); }}
+          onDelete={async (accountId) => { await deletePropertyAccount({ propertyId: property.id, id: accountId }).unwrap(); }}
+        />
+      </Box>
+
+      {/* Card 5: Galería de fotos */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" mb={2}>Galería de fotos</Typography>

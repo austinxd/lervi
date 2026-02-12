@@ -98,7 +98,6 @@ export default function PropertySettings() {
       <Box display="flex" gap={1} mb={3}>
         <Button variant="outlined" onClick={() => navigate('/settings')}>Organización</Button>
         <Button variant="contained">Propiedades</Button>
-        <Button variant="outlined" onClick={() => navigate('/settings/bank-accounts')}>Cuentas Bancarias</Button>
       </Box>
       <Box display="flex" justifyContent="flex-end" mb={2}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nueva propiedad</Button>

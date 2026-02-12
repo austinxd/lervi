@@ -70,7 +70,25 @@ class PropertyViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class BankAccountViewSet(viewsets.ModelViewSet):
+class OrgBankAccountViewSet(viewsets.ModelViewSet):
+    """CRUD for organization-level bank accounts (inherited by all properties)."""
+    serializer_class = BankAccountSerializer
+    queryset = BankAccount.objects.all()
+    permission_classes = [IsOwnerOrManager]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return BankAccount.objects.filter(
+            organization=self.request.organization,
+            property__isnull=True,
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(organization=self.request.organization, property=None)
+
+
+class PropertyBankAccountViewSet(viewsets.ModelViewSet):
+    """CRUD for property-specific bank accounts."""
     serializer_class = BankAccountSerializer
     queryset = BankAccount.objects.all()
     permission_classes = [IsOwnerOrManager]
@@ -88,4 +106,4 @@ class BankAccountViewSet(viewsets.ModelViewSet):
             pk=self.kwargs["property_pk"],
             organization=self.request.organization,
         )
-        serializer.save(property=prop)
+        serializer.save(organization=self.request.organization, property=prop)

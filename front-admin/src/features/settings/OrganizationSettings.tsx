@@ -4,6 +4,13 @@ import { Box, Button, Card, CardContent, Divider, Grid, MenuItem, TextField, Typ
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { useGetOrganizationQuery, useUpdateOrganizationMutation } from '../../services/organizationService';
+import {
+  useGetOrgBankAccountsQuery,
+  useCreateOrgBankAccountMutation,
+  useUpdateOrgBankAccountMutation,
+  useDeleteOrgBankAccountMutation,
+} from '../../services/bankAccountService';
+import BankAccountTable from './BankAccountSettings';
 import type { Organization } from '../../interfaces/types';
 
 export default function OrganizationSettings() {
@@ -11,6 +18,10 @@ export default function OrganizationSettings() {
   const { enqueueSnackbar } = useSnackbar();
   const { data: org } = useGetOrganizationQuery();
   const [updateOrg, { isLoading }] = useUpdateOrganizationMutation();
+  const { data: orgAccounts = [], isLoading: accountsLoading } = useGetOrgBankAccountsQuery();
+  const [createOrgAccount] = useCreateOrgBankAccountMutation();
+  const [updateOrgAccount] = useUpdateOrgBankAccountMutation();
+  const [deleteOrgAccount] = useDeleteOrgBankAccountMutation();
 
   const { register, handleSubmit, reset, control } = useForm<Partial<Organization>>();
 
@@ -33,7 +44,6 @@ export default function OrganizationSettings() {
       <Box display="flex" gap={1} mb={3}>
         <Button variant="contained">Organización</Button>
         <Button variant="outlined" onClick={() => navigate('/settings/properties')}>Propiedades</Button>
-        <Button variant="outlined" onClick={() => navigate('/settings/bank-accounts')}>Cuentas Bancarias</Button>
       </Box>
       <Card>
         <CardContent>
@@ -79,6 +89,17 @@ export default function OrganizationSettings() {
           </form>
         </CardContent>
       </Card>
+      <Box sx={{ mt: 3 }}>
+        <BankAccountTable
+          accounts={orgAccounts}
+          isLoading={accountsLoading}
+          title="Cuentas bancarias (todas las propiedades)"
+          emptyMessage="No hay cuentas bancarias a nivel de organizacion"
+          onCreate={async (data) => { await createOrgAccount(data).unwrap(); }}
+          onUpdate={async (id, data) => { await updateOrgAccount({ id, data }).unwrap(); }}
+          onDelete={async (id) => { await deleteOrgAccount(id).unwrap(); }}
+        />
+      </Box>
     </Box>
   );
 }

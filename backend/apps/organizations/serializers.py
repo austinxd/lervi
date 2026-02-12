@@ -45,12 +45,17 @@ class PropertyPhotoSerializer(serializers.ModelSerializer):
 
 
 class BankAccountSerializer(serializers.ModelSerializer):
+    level = serializers.SerializerMethodField()
+
     class Meta:
         model = BankAccount
         fields = [
             "id", "property", "bank_name", "account_holder",
             "account_number", "cci", "currency",
-            "is_active", "sort_order",
+            "is_active", "sort_order", "level",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "property", "created_at", "updated_at"]
+
+    def get_level(self, obj):
+        return "property" if obj.property_id else "organization"

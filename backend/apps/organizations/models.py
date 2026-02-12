@@ -104,10 +104,19 @@ class PropertyPhoto(BaseModel):
 
 
 class BankAccount(BaseModel):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="bank_accounts",
+        null=True,
+    )
     property = models.ForeignKey(
         Property,
         on_delete=models.CASCADE,
         related_name="bank_accounts",
+        null=True,
+        blank=True,
+        help_text="Null = cuenta de la organización, heredada por todas las propiedades",
     )
     bank_name = models.CharField(max_length=100)
     account_holder = models.CharField(max_length=200)

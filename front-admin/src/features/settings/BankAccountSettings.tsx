@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, Card, CardContent, Chip, Dialog, DialogActions,
   DialogContent, DialogTitle, IconButton, MenuItem, Table, TableBody,
@@ -10,13 +9,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
-import { useGetPropertiesQuery } from '../../services/organizationService';
-import {
-  useGetBankAccountsQuery,
-  useCreateBankAccountMutation,
-  useUpdateBankAccountMutation,
-  useDeleteBankAccountMutation,
-} from '../../services/bankAccountService';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import type { BankAccount } from '../../interfaces/types';
 
@@ -35,27 +27,27 @@ const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'Dolares (USD)' },
 ];
 
-export default function BankAccountSettings() {
-  const navigate = useNavigate();
+interface BankAccountTableProps {
+  accounts: BankAccount[];
+  isLoading: boolean;
+  onCreate: (data: FormData) => Promise<void>;
+  onUpdate: (id: string, data: FormData) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  title: string;
+  emptyMessage: string;
+}
+
+export default function BankAccountTable({
+  accounts,
+  isLoading,
+  onCreate,
+  onUpdate,
+  onDelete,
+  title,
+  emptyMessage,
+}: BankAccountTableProps) {
   const { enqueueSnackbar } = useSnackbar();
 
-  // Property selection
-  const { data: propertiesData } = useGetPropertiesQuery({ page: 1 });
-  const properties = propertiesData?.results || [];
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
-
-  // Auto-select first property
-  const propertyId = selectedPropertyId || properties[0]?.id || '';
-
-  const { data: accounts = [], isLoading } = useGetBankAccountsQuery(propertyId, {
-    skip: !propertyId,
-  });
-
-  const [createBankAccount] = useCreateBankAccountMutation();
-  const [updateBankAccount] = useUpdateBankAccountMutation();
-  const [deleteBankAccount] = useDeleteBankAccountMutation();
-
-  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string }>({
@@ -106,14 +98,10 @@ export default function BankAccountSettings() {
   const onSubmit = async (data: FormData) => {
     try {
       if (editingAccount) {
-        await updateBankAccount({
-          propertyId,
-          id: editingAccount.id,
-          data,
-        }).unwrap();
+        await onUpdate(editingAccount.id, data);
         enqueueSnackbar('Cuenta bancaria actualizada', { variant: 'success' });
       } else {
-        await createBankAccount({ propertyId, data }).unwrap();
+        await onCreate(data);
         enqueueSnackbar('Cuenta bancaria creada', { variant: 'success' });
       }
       setDialogOpen(false);
@@ -124,7 +112,7 @@ export default function BankAccountSettings() {
 
   const handleDelete = async () => {
     try {
-      await deleteBankAccount({ propertyId, id: deleteDialog.id }).unwrap();
+      await onDelete(deleteDialog.id);
       enqueueSnackbar('Cuenta bancaria eliminada', { variant: 'success' });
     } catch {
       enqueueSnackbar('Error al eliminar', { variant: 'error' });
@@ -133,42 +121,17 @@ export default function BankAccountSettings() {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" mb={2}>Configuración</Typography>
-      <Box display="flex" gap={1} mb={3}>
-        <Button variant="outlined" onClick={() => navigate('/settings')}>Organización</Button>
-        <Button variant="outlined" onClick={() => navigate('/settings/properties')}>Propiedades</Button>
-        <Button variant="contained">Cuentas Bancarias</Button>
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate} disabled={!propertyId}>
-          Agregar Cuenta
-        </Button>
-      </Box>
-
-      {/* Property selector */}
-      {properties.length > 1 && (
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            select
-            label="Propiedad"
-            value={propertyId}
-            onChange={(e) => setSelectedPropertyId(e.target.value)}
-            size="small"
-            sx={{ minWidth: 300 }}
-          >
-            {properties.map((p) => (
-              <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-            ))}
-          </TextField>
-        </Box>
-      )}
-
+    <>
       <Card>
         <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6">{title}</Typography>
+            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openCreate}>
+              Agregar
+            </Button>
+          </Box>
           <TableContainer>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Banco</TableCell>
@@ -212,7 +175,7 @@ export default function BankAccountSettings() {
                 {!isLoading && accounts.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                      No hay cuentas bancarias configuradas
+                      {emptyMessage}
                     </TableCell>
                   </TableRow>
                 )}
@@ -330,6 +293,6 @@ export default function BankAccountSettings() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, id: '' })}
       />
-    </Box>
+    </>
   );
 }

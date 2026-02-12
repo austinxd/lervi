@@ -245,7 +245,7 @@ export interface ReservationDetail extends ReservationList {
 
 export interface BankAccount {
   id: string;
-  property: string;
+  property: string | null;
   bank_name: string;
   account_holder: string;
   account_number: string;
@@ -253,6 +253,7 @@ export interface BankAccount {
   currency: string;
   is_active: boolean;
   sort_order: number;
+  level: 'organization' | 'property';
   created_at: string;
   updated_at: string;
 }

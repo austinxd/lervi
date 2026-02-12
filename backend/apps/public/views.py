@@ -4,6 +4,7 @@ from datetime import date, timedelta
 import jwt
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -358,7 +359,8 @@ class CreateReservationView(APIView):
 
         # Check if property has active bank accounts
         has_bank_accounts = BankAccount.objects.filter(
-            property=prop, is_active=True,
+            Q(organization=org, property__isnull=True) | Q(property=prop),
+            is_active=True,
         ).exists()
 
         # Set payment deadline if bank accounts exist (1 hour)
@@ -565,7 +567,8 @@ class ReservationLookupView(APIView):
             "guest_name": reservation.guest.full_name,
             "payment_deadline": reservation.payment_deadline,
             "has_bank_accounts": BankAccount.objects.filter(
-                property=prop, is_active=True,
+                Q(organization=org, property__isnull=True) | Q(property=prop),
+                is_active=True,
             ).exists(),
         }
         result = ReservationConfirmationSerializer(data)
@@ -590,7 +593,12 @@ class BankAccountListView(APIView):
         if property_slug:
             properties = properties.filter(slug=property_slug)
 
-        accounts = BankAccount.objects.filter(property__in=properties, is_active=True)
+        # Organization-level + property-level accounts
+        accounts = BankAccount.objects.filter(
+            Q(organization=org, property__isnull=True) |
+            Q(property__in=properties),
+            is_active=True,
+        )
         serializer = PublicBankAccountSerializer(accounts, many=True)
         return Response(serializer.data)
 
