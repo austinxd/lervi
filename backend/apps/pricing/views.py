@@ -119,6 +119,8 @@ class CalculatePriceView(APIView):
             rate_plan=rate_plan,
             promotion_code=data.get("promotion_code", ""),
             advance_days=max(0, advance_days),
+            adults=data.get("adults", 1),
+            children=data.get("children", 0),
         )
 
         total = calculate_total(nightly_prices)

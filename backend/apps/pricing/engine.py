@@ -2,11 +2,11 @@
 Pricing calculation pipeline.
 
 Pipeline order:
-1. Base price (from room type)
-2. Season adjustment
-3. Day-of-week adjustment
-4. Rate plan adjustment
-5. Promotion adjustment
+0. Occupancy surcharge (extra adults/children)
+1. Season adjustment
+2. Day-of-week adjustment
+3. Rate plan adjustment
+4. Promotion adjustment
 = Final nightly price
 
 Total = sum of each night's price.
@@ -25,6 +25,8 @@ def calculate_nightly_prices(
     rate_plan=None,
     promotion_code=None,
     advance_days=0,
+    adults=1,
+    children=0,
 ):
     """
     Calculate the price for each night of a stay.
@@ -78,6 +80,26 @@ def calculate_nightly_prices(
         night_date = check_in + timedelta(days=i)
         price = base_price
         adjustments = []
+
+        # 0. Occupancy surcharge
+        occupancy_surcharge = Decimal("0")
+        extra_adults = max(0, adults - 1)
+        if extra_adults > 0 and room_type.extra_adult_fee > 0:
+            occupancy_surcharge += room_type.extra_adult_fee * extra_adults
+        if children > 0 and room_type.extra_child_fee > 0:
+            occupancy_surcharge += room_type.extra_child_fee * children
+
+        if occupancy_surcharge > 0:
+            old_price = price
+            price = price + occupancy_surcharge
+            adjustments.append({
+                "type": "occupancy",
+                "extra_adults": extra_adults,
+                "children": children,
+                "surcharge": str(occupancy_surcharge),
+                "before": str(old_price),
+                "after": str(price),
+            })
 
         # 1. Season adjustment
         for season in seasons:
@@ -153,7 +175,7 @@ def calculate_nightly_prices(
 
         nightly_prices.append({
             "date": night_date.isoformat(),
-            "base": str(base_price),
+            "base": str(base_price + occupancy_surcharge),
             "final": str(price),
             "adjustments": adjustments,
         })

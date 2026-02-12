@@ -59,6 +59,8 @@ class PriceCalculationRequestSerializer(serializers.Serializer):
     check_out = serializers.DateField()
     rate_plan_id = serializers.UUIDField(required=False)
     promotion_code = serializers.CharField(required=False, default="")
+    adults = serializers.IntegerField(required=False, default=1, min_value=1)
+    children = serializers.IntegerField(required=False, default=0, min_value=0)
 
     def validate(self, data):
         if data["check_in"] >= data["check_out"]:

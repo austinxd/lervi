@@ -23,6 +23,8 @@ interface FormData {
   max_adults: number;
   max_children: number;
   base_price: string;
+  extra_adult_fee: string;
+  extra_child_fee: string;
   is_active: boolean;
 }
 
@@ -70,6 +72,8 @@ export default function RoomTypeForm() {
         max_adults: roomType.max_adults,
         max_children: roomType.max_children,
         base_price: roomType.base_price,
+        extra_adult_fee: roomType.extra_adult_fee,
+        extra_child_fee: roomType.extra_child_fee,
         is_active: roomType.is_active,
       });
     }
@@ -168,6 +172,12 @@ export default function RoomTypeForm() {
               </Grid>
               <Grid item xs={4}>
                 <TextField {...register('base_price')} label="Precio base" type="number" fullWidth />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField {...register('extra_adult_fee')} label="Cargo adulto extra" type="number" fullWidth inputProps={{ step: '0.01', min: '0' }} />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField {...register('extra_child_fee')} label="Cargo niño extra" type="number" fullWidth inputProps={{ step: '0.01', min: '0' }} />
               </Grid>
             </Grid>
             <Box display="flex" gap={1} mt={3}>

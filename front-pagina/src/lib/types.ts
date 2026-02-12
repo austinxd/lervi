@@ -77,6 +77,8 @@ export interface RoomType {
   max_adults: number;
   max_children: number;
   base_price: string;
+  extra_adult_fee: string;
+  extra_child_fee: string;
   amenities: string[];
   size_sqm: string | null;
   view_type: string;
@@ -100,6 +102,9 @@ export interface NightlyPrice {
     type: string;
     name?: string;
     modifier?: string;
+    extra_adults?: number;
+    children?: number;
+    surcharge?: string;
     before: string;
     after: string;
   }>;

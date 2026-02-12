@@ -210,6 +210,8 @@ class AvailabilityView(APIView):
                         room_type=rt,
                         check_in=check_in_date,
                         check_out=check_out_date,
+                        adults=adults,
+                        children=children,
                     )
                     total = calculate_total(nightly_prices)
 
@@ -293,6 +295,8 @@ class CreateReservationView(APIView):
             check_in=data["check_in_date"],
             check_out=data["check_out_date"],
             promotion_code=data.get("promotion_code") or None,
+            adults=data["adults"],
+            children=data.get("children", 0),
         )
         total = calculate_total(nightly_prices)
 
