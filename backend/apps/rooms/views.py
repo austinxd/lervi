@@ -85,9 +85,9 @@ class RoomTypeViewSet(viewsets.ModelViewSet):
         room_type = self.get_object()
         if request.method == "GET":
             photos = room_type.photos.all()
-            serializer = RoomTypePhotoSerializer(photos, many=True)
+            serializer = RoomTypePhotoSerializer(photos, many=True, context={"request": request})
             return Response(serializer.data)
-        serializer = RoomTypePhotoSerializer(data=request.data)
+        serializer = RoomTypePhotoSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save(room_type=room_type)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -104,7 +104,7 @@ class RoomTypeViewSet(viewsets.ModelViewSet):
         if request.method == "DELETE":
             photo.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        serializer = RoomTypePhotoSerializer(photo, data=request.data, partial=True)
+        serializer = RoomTypePhotoSerializer(photo, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

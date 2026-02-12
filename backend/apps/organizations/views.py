@@ -45,9 +45,9 @@ class PropertyViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         prop = self.get_object()
         if request.method == "GET":
             photos = prop.photos.all()
-            serializer = PropertyPhotoSerializer(photos, many=True)
+            serializer = PropertyPhotoSerializer(photos, many=True, context={"request": request})
             return Response(serializer.data)
-        serializer = PropertyPhotoSerializer(data=request.data)
+        serializer = PropertyPhotoSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save(property=prop)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -64,7 +64,7 @@ class PropertyViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         if request.method == "DELETE":
             photo.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        serializer = PropertyPhotoSerializer(photo, data=request.data, partial=True)
+        serializer = PropertyPhotoSerializer(photo, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
