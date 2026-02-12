@@ -112,6 +112,7 @@ class RoomTypeListSerializer(serializers.ModelSerializer):
             "max_adults",
             "max_children",
             "base_price",
+            "base_occupancy",
             "extra_adult_fee",
             "extra_child_fee",
             "amenities",

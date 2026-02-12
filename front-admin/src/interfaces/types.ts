@@ -136,6 +136,7 @@ export interface RoomType {
   max_adults: number;
   max_children: number;
   base_price: string;
+  base_occupancy: number;
   extra_adult_fee: string;
   extra_child_fee: string;
   amenities: string[];

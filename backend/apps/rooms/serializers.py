@@ -58,7 +58,7 @@ class RoomTypeSerializer(serializers.ModelSerializer):
         fields = [
             "id", "property", "name", "slug", "description",
             "max_adults", "max_children", "base_price",
-            "extra_adult_fee", "extra_child_fee",
+            "base_occupancy", "extra_adult_fee", "extra_child_fee",
             "amenities", "is_active",
             "bed_configurations", "photos",
             "created_at", "updated_at",
@@ -72,7 +72,7 @@ class RoomTypeCreateSerializer(serializers.ModelSerializer):
         fields = [
             "id", "property", "name", "slug", "description",
             "max_adults", "max_children", "base_price",
-            "extra_adult_fee", "extra_child_fee",
+            "base_occupancy", "extra_adult_fee", "extra_child_fee",
             "amenities", "is_active",
         ]
         read_only_fields = ["id"]

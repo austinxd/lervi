@@ -83,7 +83,7 @@ def calculate_nightly_prices(
 
         # 0. Occupancy surcharge
         occupancy_surcharge = Decimal("0")
-        extra_adults = max(0, adults - 1)
+        extra_adults = max(0, adults - room_type.base_occupancy)
         if extra_adults > 0 and room_type.extra_adult_fee > 0:
             occupancy_surcharge += room_type.extra_adult_fee * extra_adults
         if children > 0 and room_type.extra_child_fee > 0:

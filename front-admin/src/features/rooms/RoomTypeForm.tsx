@@ -23,6 +23,7 @@ interface FormData {
   max_adults: number;
   max_children: number;
   base_price: string;
+  base_occupancy: number;
   extra_adult_fee: string;
   extra_child_fee: string;
   is_active: boolean;
@@ -72,6 +73,7 @@ export default function RoomTypeForm() {
         max_adults: roomType.max_adults,
         max_children: roomType.max_children,
         base_price: roomType.base_price,
+        base_occupancy: roomType.base_occupancy,
         extra_adult_fee: roomType.extra_adult_fee,
         extra_child_fee: roomType.extra_child_fee,
         is_active: roomType.is_active,
@@ -170,8 +172,11 @@ export default function RoomTypeForm() {
               <Grid item xs={4}>
                 <TextField {...register('max_children', { valueAsNumber: true })} label="Máx. niños" type="number" fullWidth />
               </Grid>
-              <Grid item xs={4}>
-                <TextField {...register('base_price')} label="Precio base" type="number" fullWidth />
+              <Grid item xs={6} sm={3}>
+                <TextField {...register('base_price')} label="Precio base" type="number" fullWidth inputProps={{ step: '0.01' }} />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField {...register('base_occupancy', { valueAsNumber: true })} label="Adultos incluidos" type="number" fullWidth inputProps={{ min: 1 }} helperText="En el precio base" />
               </Grid>
               <Grid item xs={6} sm={3}>
                 <TextField {...register('extra_adult_fee')} label="Cargo adulto extra" type="number" fullWidth inputProps={{ step: '0.01', min: '0' }} />

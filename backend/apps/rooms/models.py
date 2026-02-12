@@ -17,9 +17,13 @@ class RoomType(BaseModel):
     max_adults = models.PositiveSmallIntegerField(default=2)
     max_children = models.PositiveSmallIntegerField(default=0)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    base_occupancy = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Cantidad de adultos incluidos en el precio base",
+    )
     extra_adult_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
-        help_text="Cargo adicional por noche por cada adulto despues del primero",
+        help_text="Cargo adicional por noche por cada adulto extra",
     )
     extra_child_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
