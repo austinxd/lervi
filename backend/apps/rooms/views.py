@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -43,12 +44,23 @@ class RoomTypeViewSet(viewsets.ModelViewSet):
         return RoomTypeSerializer
 
     def get_permissions(self):
-        if self.action in ("create", "partial_update"):
+        if self.action in ("create", "partial_update", "destroy"):
             self.permission_classes = [IsOwnerOrManager]
         return super().get_permissions()
 
     def perform_create(self, serializer):
         serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            instance.delete()
+        except ProtectedError:
+            return Response(
+                {"detail": "No se puede eliminar este tipo de habitación porque tiene reservas asociadas."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # --- Nested: Bed Configurations ---
     @action(detail=True, methods=["get", "post"], url_path="bed-configs")

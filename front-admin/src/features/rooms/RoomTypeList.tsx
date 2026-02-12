@@ -33,8 +33,10 @@ export default function RoomTypeList() {
       await deleteRoomType(deleteId).unwrap();
       enqueueSnackbar('Tipo de habitación eliminado', { variant: 'success' });
       setDeleteId(null);
-    } catch {
-      enqueueSnackbar('Error al eliminar', { variant: 'error' });
+    } catch (err: unknown) {
+      const detail = (err as { data?: { detail?: string } })?.data?.detail;
+      enqueueSnackbar(detail || 'Error al eliminar', { variant: 'error' });
+      setDeleteId(null);
     }
   };
 
