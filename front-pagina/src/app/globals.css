@@ -357,7 +357,6 @@
    HERO SIGNATURE SLIDER (CSS-only crossfade)
    ============================================ */
 .hero-signature-slides {
-  position: relative;
   overflow: hidden;
 }
 
