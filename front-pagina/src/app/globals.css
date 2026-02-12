@@ -108,6 +108,13 @@
     padding-right: 40px;
   }
 
+  /* Borderless date variant (used inside search bar) */
+  .input-field[type="date"].\!border-0 {
+    min-height: auto;
+    background-image: none;
+    padding-right: 0;
+  }
+
   .input-field[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0;
     width: 100%;

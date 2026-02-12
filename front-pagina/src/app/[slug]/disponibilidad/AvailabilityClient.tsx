@@ -85,115 +85,183 @@ export default function AvailabilityClient({ slug }: Props) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Form */}
-        <div className="bg-white rounded-lg shadow-lg border border-sand-200 p-8 -mt-20 relative z-10 mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-            <div className="lg:col-span-1">
-              <label className="label-field">Fecha de entrada</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={checkIn}
-                  min={today}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-              {checkIn && (
-                <p className="text-xs text-gray-400 mt-1.5 font-sans">
-                  {new Date(checkIn + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-              )}
-            </div>
-            <div className="lg:col-span-1">
-              <label className="label-field">Fecha de salida</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={checkOut}
-                  min={checkIn || today}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-              {checkOut && (
-                <p className="text-xs text-gray-400 mt-1.5 font-sans">
-                  {new Date(checkOut + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="label-field">Adultos</label>
-                <select
-                  value={adults}
-                  onChange={(e) => setAdults(Number(e.target.value))}
-                  className="input-field"
-                >
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="label-field">Menores</label>
-                <select
-                  value={children}
-                  onChange={(e) => setChildren(Number(e.target.value))}
-                  className="input-field"
-                >
-                  {[0, 1, 2, 3, 4].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <button
-              onClick={handleSearch}
-              disabled={!checkIn || !checkOut || loading}
-              className="btn-primary h-[48px] disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <svg
-                  className="animate-spin h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        <div className="bg-white rounded-lg shadow-lg border border-sand-200 -mt-20 relative z-10 mb-12 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr_auto]">
+            {/* Check-in */}
+            <div className="p-5 lg:p-6 border-b lg:border-b-0 lg:border-r border-sand-200">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 font-sans mb-2 block">
+                Llegada
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-accent-50 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                   </svg>
-                  Buscar
-                </>
-              )}
-            </button>
-          </div>
-          {checkIn && checkOut && (
-            <div className="mt-4 pt-4 border-t border-sand-100 flex items-center gap-2 text-xs text-gray-400 font-sans">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
-              </svg>
-              {Math.max(0, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))} noche(s)
+                </div>
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="date"
+                    value={checkIn}
+                    min={today}
+                    onChange={(e) => setCheckIn(e.target.value)}
+                    className="input-field !border-0 !px-0 !py-0 !ring-0 !shadow-none focus:!ring-0 text-primary-900 font-medium"
+                  />
+                  {checkIn && (
+                    <p className="text-xs text-gray-400 font-sans mt-0.5 capitalize truncate">
+                      {new Date(checkIn + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "short" })}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Check-out */}
+            <div className="p-5 lg:p-6 border-b lg:border-b-0 lg:border-r border-sand-200">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 font-sans mb-2 block">
+                Salida
+                {checkIn && checkOut && (
+                  <span className="ml-2 text-accent-600 normal-case tracking-normal font-medium">
+                    {Math.max(0, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))} noche(s)
+                  </span>
+                )}
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-accent-50 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="date"
+                    value={checkOut}
+                    min={checkIn || today}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    className="input-field !border-0 !px-0 !py-0 !ring-0 !shadow-none focus:!ring-0 text-primary-900 font-medium"
+                  />
+                  {checkOut && (
+                    <p className="text-xs text-gray-400 font-sans mt-0.5 capitalize truncate">
+                      {new Date(checkOut + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "short" })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Guests */}
+            <div className="p-5 lg:p-6 border-b lg:border-b-0 lg:border-r border-sand-200">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 font-sans mb-2 block">
+                Huespedes
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-accent-50 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Adults */}
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 font-sans mb-1.5">Adultos</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAdults(Math.max(1, adults - 1))}
+                          className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-accent-500 hover:text-accent-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={adults <= 1}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                          </svg>
+                        </button>
+                        <span className="text-sm font-semibold text-primary-900 w-5 text-center font-sans">{adults}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAdults(Math.min(10, adults + 1))}
+                          className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-accent-500 hover:text-accent-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={adults >= 10}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-px h-10 bg-gray-200 flex-shrink-0" />
+
+                    {/* Children */}
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 font-sans mb-1.5">Menores</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setChildren(Math.max(0, children - 1))}
+                          className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-accent-500 hover:text-accent-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={children <= 0}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                          </svg>
+                        </button>
+                        <span className="text-sm font-semibold text-primary-900 w-5 text-center font-sans">{children}</span>
+                        <button
+                          type="button"
+                          onClick={() => setChildren(Math.min(6, children + 1))}
+                          className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-accent-500 hover:text-accent-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={children >= 6}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search Button */}
+            <div className="p-5 lg:p-6 flex items-center">
+              <button
+                onClick={handleSearch}
+                disabled={!checkIn || !checkOut || loading}
+                className="btn-primary w-full lg:w-auto h-full min-h-[56px] lg:min-h-0 lg:px-10 lg:py-8 disabled:opacity-40 flex items-center justify-center gap-2.5"
+              >
+                {loading ? (
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    <span className="lg:hidden">Buscar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Error */}
