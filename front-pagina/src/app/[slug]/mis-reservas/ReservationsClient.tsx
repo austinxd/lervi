@@ -159,62 +159,50 @@ export default function ReservationsClient({ slug }: Props) {
 
   if (loading) {
     return (
-      <>
-        <section className="bg-primary-900 py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="font-serif text-4xl text-white">Mis Reservas</h1>
-          </div>
-        </section>
-        <section className="py-12 bg-sand-50 min-h-[60vh] flex items-center justify-center">
-          <svg
-            className="animate-spin h-8 w-8 text-primary-700"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        </section>
-      </>
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
+        <svg
+          className="animate-spin h-8 w-8 text-primary-700"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+      </div>
     );
   }
 
   return (
-    <>
-      <section className="bg-primary-900 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="font-serif text-4xl text-white mb-2">
-                Mis Reservas
-              </h1>
-              {guestName && (
-                <p className="text-white/70 text-lg">Hola, {guestName}</p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-white/70 hover:text-white text-sm font-medium border border-white/20 rounded-lg px-4 py-2 transition-colors self-start"
-            >
-              Cerrar sesion
-            </button>
+    <div className="min-h-screen bg-sand-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-serif text-2xl sm:text-3xl text-primary-900 mb-1">
+              Mis Reservas
+            </h1>
+            {guestName && (
+              <p className="text-gray-500 text-sm">Hola, {guestName}</p>
+            )}
           </div>
+          <button
+            onClick={handleLogout}
+            className="text-gray-500 hover:text-primary-900 text-sm font-medium border border-sand-200 rounded-lg px-4 py-2 transition-colors self-start"
+          >
+            Cerrar sesion
+          </button>
         </div>
-      </section>
-
-      <section className="py-12 bg-sand-50 min-h-[60vh]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm mb-6">
               {error}
@@ -401,8 +389,7 @@ export default function ReservationsClient({ slug }: Props) {
               })}
             </div>
           )}
-        </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }
