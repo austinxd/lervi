@@ -882,6 +882,7 @@ class GuestReservationsView(APIView):
                 "currency": r.currency,
                 "voucher_image": r.voucher_image.url if r.voucher_image else None,
                 "property_name": r.property.name,
+                "payment_deadline": r.payment_deadline,
             })
 
         serializer = GuestReservationListSerializer(results, many=True)

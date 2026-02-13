@@ -250,6 +250,7 @@ class GuestReservationListSerializer(serializers.Serializer):
     currency = serializers.CharField()
     voucher_image = serializers.CharField(allow_null=True)
     property_name = serializers.CharField()
+    payment_deadline = serializers.DateTimeField(required=False, allow_null=True)
 
 
 class GroupRoomItemSerializer(serializers.Serializer):

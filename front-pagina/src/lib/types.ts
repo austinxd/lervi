@@ -249,4 +249,5 @@ export interface GuestReservation {
   currency: string;
   voucher_image: string | null;
   property_name: string;
+  payment_deadline: string | null;
 }
