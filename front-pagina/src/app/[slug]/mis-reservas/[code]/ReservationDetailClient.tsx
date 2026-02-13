@@ -122,7 +122,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
   const loadData = useCallback(async () => {
     const token = getGuestToken();
     if (!token) {
-      router.replace(`/${slug}/iniciar-sesion`);
+      router.replace("/iniciar-sesion");
       return;
     }
     try {
@@ -231,7 +231,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
           <p className="text-gray-500 font-sans mb-6">
             {error || "No se encontro la reserva."}
           </p>
-          <Link href={`/${slug}/mis-reservas`} className="btn-primary">
+          <Link href="/mis-reservas" className="btn-primary">
             Volver a Mis Reservas
           </Link>
         </div>
@@ -259,7 +259,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
       <div className="bg-primary-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
-            href={`/${slug}/mis-reservas`}
+            href="/mis-reservas"
             className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-sans mb-6 transition-colors"
           >
             <svg
@@ -368,7 +368,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                   reserva sera cancelada automaticamente.
                 </p>
                 <Link
-                  href={`/${slug}/disponibilidad`}
+                  href="/disponibilidad"
                   className="btn-primary inline-block"
                 >
                   Buscar Nueva Disponibilidad

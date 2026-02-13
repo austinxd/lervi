@@ -83,14 +83,14 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
   // Build the return URL for login redirect
   const currentUrl = typeof window !== "undefined"
     ? window.location.pathname + window.location.search
-    : `/${slug}/reservar`;
+    : "/reservar";
 
   // Check auth + fetch availability on mount
   useEffect(() => {
     const token = getGuestToken();
     if (!token) {
       // Not logged in — redirect to login with return URL
-      router.replace(`/${slug}/iniciar-sesion?next=${encodeURIComponent(currentUrl)}`);
+      router.replace(`/iniciar-sesion?next=${encodeURIComponent(currentUrl)}`);
       return;
     }
 
@@ -102,7 +102,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
       })
       .catch(() => {
         // Token expired — redirect to login
-        router.replace(`/${slug}/iniciar-sesion?next=${encodeURIComponent(currentUrl)}`);
+        router.replace(`/iniciar-sesion?next=${encodeURIComponent(currentUrl)}`);
       });
 
     // Fetch availability
@@ -159,7 +159,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
         special_requests: specialRequests,
       });
       if (result.has_bank_accounts) {
-        router.push(`/${slug}/reservar/pago?code=${result.confirmation_code}`);
+        router.push(`/reservar/pago?code=${result.confirmation_code}`);
         return;
       }
       setConfirmation(result);
@@ -211,8 +211,8 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
               </div>
             </div>
             <div className="flex gap-4 justify-center mt-8">
-              <Link href={`/${slug}/mis-reservas`} className="btn-primary">Ver mis reservas</Link>
-              <Link href={`/${slug}`} className="btn-dark">Volver al Inicio</Link>
+              <Link href="/mis-reservas" className="btn-primary">Ver mis reservas</Link>
+              <Link href="/" className="btn-dark">Volver al Inicio</Link>
             </div>
           </div>
         </div>
@@ -243,7 +243,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
         </div>
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <p className="text-gray-500 font-sans mb-6">No se encontro disponibilidad para esta seleccion.</p>
-          <Link href={`/${slug}/disponibilidad`} className="btn-primary">Buscar Nuevamente</Link>
+          <Link href="/disponibilidad" className="btn-primary">Buscar Nuevamente</Link>
         </div>
       </div>
     );
@@ -255,7 +255,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
       <div className="bg-primary-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
-            href={`/${slug}/disponibilidad`}
+            href="/disponibilidad"
             className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-sans mb-4 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

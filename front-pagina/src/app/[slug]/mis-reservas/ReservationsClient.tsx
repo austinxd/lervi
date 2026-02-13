@@ -111,7 +111,7 @@ export default function ReservationsClient({ slug }: Props) {
   useEffect(() => {
     const token = getGuestToken();
     if (!token) {
-      router.replace(`/${slug}/iniciar-sesion`);
+      router.replace("/iniciar-sesion");
       return;
     }
     setGuestName(getGuestName());
@@ -120,7 +120,7 @@ export default function ReservationsClient({ slug }: Props) {
       .catch((err) => {
         if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
           clearGuestSession();
-          router.replace(`/${slug}/iniciar-sesion`);
+          router.replace("/iniciar-sesion");
         } else {
           setError("Error al cargar sus reservas. Intente nuevamente.");
         }
@@ -154,7 +154,7 @@ export default function ReservationsClient({ slug }: Props) {
 
   const handleLogout = () => {
     clearGuestSession();
-    router.push(`/${slug}`);
+    router.push("/");
   };
 
   if (loading) {
@@ -244,7 +244,7 @@ export default function ReservationsClient({ slug }: Props) {
               <p className="text-gray-500 mb-6">
                 Aun no ha realizado ninguna reserva.
               </p>
-              <Link href={`/${slug}/disponibilidad`} className="btn-primary">
+              <Link href="/disponibilidad" className="btn-primary">
                 Buscar disponibilidad
               </Link>
             </div>
@@ -255,7 +255,7 @@ export default function ReservationsClient({ slug }: Props) {
                 return (
                   <Link
                     key={r.confirmation_code}
-                    href={`/${slug}/mis-reservas/${r.confirmation_code}`}
+                    href={`/mis-reservas/${r.confirmation_code}`}
                     className={`block bg-white rounded-lg border border-sand-200 border-l-4 ${STATUS_BORDER[r.operational_status] || "border-l-gray-300"} hover:shadow-md transition-shadow`}
                   >
                     <div className="p-6">

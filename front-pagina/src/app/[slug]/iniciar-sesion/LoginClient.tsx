@@ -48,7 +48,7 @@ type Tab = "login" | "register";
 export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextUrl = searchParams.get("next") || `/${slug}/mis-reservas`;
+  const nextUrl = searchParams.get("next") || "/mis-reservas";
 
   const [tab, setTab] = useState<Tab>("login");
   const [error, setError] = useState<string | null>(null);
@@ -298,7 +298,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
 
           <div className="text-center mt-6">
             <Link
-              href={`/${slug}/disponibilidad`}
+              href="/disponibilidad"
               className="text-sm text-accent-600 hover:text-accent-700 font-medium"
             >
               Buscar disponibilidad

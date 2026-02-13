@@ -65,7 +65,7 @@ export default function AvailabilityClient({ slug }: Props) {
       check_out: checkOut,
     };
     sessionStorage.setItem("group_combination", JSON.stringify(comboData));
-    router.push(`/${slug}/reservar-grupo`);
+    router.push("/reservar-grupo");
   };
 
   return (
