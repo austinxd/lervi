@@ -159,7 +159,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
         special_requests: specialRequests,
       });
       if (result.has_bank_accounts) {
-        router.push(`/reservar/pago?code=${result.confirmation_code}`);
+        router.push(`/mis-reservas/${result.confirmation_code}`);
         return;
       }
       setConfirmation(result);
