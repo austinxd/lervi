@@ -120,6 +120,9 @@ export default function ReservationDetailClient({ slug, code }: Props) {
   const [uploaded, setUploaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Currency tab state
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("PEN");
+
   // Cancel state
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -380,6 +383,53 @@ export default function ReservationDetailClient({ slug, code }: Props) {
               </div>
             </div>
           )}
+
+          {/* Voucher subido – mobile */}
+          {uploaded && reservation.voucher_image && (
+            <div className="border border-green-200 bg-green-50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-green-800 mb-2">Comprobante enviado</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={reservation.voucher_image} alt="Voucher" className="w-full max-h-48 object-contain rounded" />
+            </div>
+          )}
+
+          {/* Upload voucher – mobile */}
+          {showPaymentSection && !uploaded && (
+            <div className="bg-white rounded-lg border border-sand-200 p-4">
+              <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">Subir comprobante</h3>
+              {!preview ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-sand-300 rounded-lg p-6 text-center cursor-pointer hover:border-accent-400 hover:bg-sand-50 transition-colors"
+                >
+                  <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                  <p className="text-gray-500 font-sans text-xs">Seleccionar imagen (JPEG, PNG, WebP)</p>
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative rounded-lg overflow-hidden border border-sand-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="Preview" className="w-full max-h-48 object-contain bg-sand-50" />
+                    <button
+                      onClick={() => { setFile(null); setPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-500">{file?.name}</p>
+                </div>
+              )}
+              <button onClick={handleUpload} disabled={!file || uploading} className="btn-primary w-full !py-3 mt-3 disabled:opacity-50 text-sm">
+                {uploading ? "Subiendo..." : "Enviar Comprobante"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Grid: 2/3 + 1/3 ── */}
@@ -486,147 +536,85 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                     </div>
                   )}
 
-                  {/* Bank accounts */}
-                  {showPaymentSection && bankAccounts.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
-                        Datos para la transferencia
-                      </h3>
-                      <div className="space-y-3">
-                        {bankAccounts.map((account) => (
-                          <div key={account.id} className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-sans font-semibold text-sm text-gray-900">
+                  {/* Bank accounts con tabs por moneda */}
+                  {showPaymentSection && bankAccounts.length > 0 && (() => {
+                    const currencies = [...new Set(bankAccounts.map((a) => a.currency))];
+                    const filtered = bankAccounts.filter((a) => a.currency === selectedCurrency);
+                    return (
+                      <div className="mb-6">
+                        <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
+                          Datos para la transferencia
+                        </h3>
+
+                        {/* Tabs de moneda */}
+                        {currencies.length > 1 && (
+                          <div className="flex rounded-lg bg-sand-100 p-1 mb-4">
+                            {currencies.map((cur) => (
+                              <button
+                                key={cur}
+                                onClick={() => setSelectedCurrency(cur)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-semibold transition-all ${
+                                  selectedCurrency === cur
+                                    ? "bg-white text-primary-900 shadow-sm"
+                                    : "text-gray-500 hover:text-gray-700"
+                                }`}
+                              >
+                                <span className={`font-bold ${
+                                  cur === "PEN" ? "text-green-600" : "text-blue-600"
+                                }`}>
+                                  {cur === "PEN" ? "S/" : "$"}
+                                </span>
+                                {cur === "PEN" ? "Soles" : "Dolares"}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Cuentas de la moneda seleccionada */}
+                        <div className="space-y-3">
+                          {filtered.map((account) => (
+                            <div key={account.id} className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                              <h4 className="font-sans font-semibold text-sm text-gray-900 mb-3">
                                 {account.bank_name}
                               </h4>
-                              <span className="text-[10px] font-sans font-medium text-gray-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-amber-200">
-                                {account.currency}
-                              </span>
-                            </div>
-                            <div className="space-y-2 text-sm font-sans">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-gray-500 text-xs">Titular:</span>{" "}
-                                  <span className="font-medium text-gray-900">{account.account_holder}</span>
-                                </div>
-                                <CopyButton text={account.account_holder} />
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-gray-500 text-xs">N° cuenta:</span>{" "}
-                                  <span className="font-medium font-mono text-gray-900">{account.account_number}</span>
-                                </div>
-                                <CopyButton text={account.account_number} />
-                              </div>
-                              {account.cci && (
+                              <div className="space-y-2.5 text-sm font-sans">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <span className="text-gray-500 text-xs">CCI:</span>{" "}
-                                    <span className="font-medium font-mono text-gray-900">{account.cci}</span>
+                                    <span className="text-gray-500 text-xs block">Titular</span>
+                                    <span className="font-medium text-gray-900">{account.account_holder}</span>
                                   </div>
-                                  <CopyButton text={account.cci} />
+                                  <CopyButton text={account.account_holder} />
                                 </div>
-                              )}
+                                <div className="border-t border-amber-200/60 pt-2 flex items-center justify-between">
+                                  <div>
+                                    <span className="text-gray-500 text-xs block">N° de cuenta</span>
+                                    <span className="font-medium font-mono text-gray-900">{account.account_number}</span>
+                                  </div>
+                                  <CopyButton text={account.account_number} />
+                                </div>
+                                {account.cci && (
+                                  <div className="border-t border-amber-200/60 pt-2 flex items-center justify-between">
+                                    <div>
+                                      <span className="text-gray-500 text-xs block">CCI (transferencia interbancaria)</span>
+                                      <span className="font-medium font-mono text-gray-900">{account.cci}</span>
+                                    </div>
+                                    <CopyButton text={account.cci} />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Upload voucher zone */}
-                  {showPaymentSection && (
-                    <div>
-                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
-                        Subir comprobante de pago
-                      </h3>
-
-                      {!preview ? (
-                        <div
-                          onClick={() => fileInputRef.current?.click()}
-                          className="border-2 border-dashed border-sand-300 rounded-lg p-8 text-center cursor-pointer hover:border-accent-400 hover:bg-sand-50 transition-colors"
-                        >
-                          <svg className="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                          </svg>
-                          <p className="text-gray-500 font-sans text-sm mb-1">
-                            Haga clic para seleccionar una imagen
-                          </p>
-                          <p className="text-gray-400 font-sans text-xs">
-                            JPEG, PNG o WebP — Max 5 MB
-                          </p>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={handleFileChange}
-                            className="hidden"
-                          />
+                          ))}
+                          {filtered.length === 0 && (
+                            <p className="text-sm text-gray-500 font-sans py-4 text-center">
+                              No hay cuentas disponibles en esta moneda.
+                            </p>
+                          )}
                         </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="relative rounded-lg overflow-hidden border border-sand-200">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={preview}
-                              alt="Preview del comprobante"
-                              className="w-full max-h-80 object-contain bg-sand-50"
-                            />
-                            <button
-                              onClick={() => {
-                                setFile(null);
-                                setPreview(null);
-                                if (fileInputRef.current) fileInputRef.current.value = "";
-                              }}
-                              className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-colors"
-                            >
-                              <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500 font-sans">
-                            {file?.name} — {((file?.size ?? 0) / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={handleUpload}
-                        disabled={!file || uploading}
-                        className="btn-primary w-full !py-3.5 mt-4 disabled:opacity-50"
-                      >
-                        {uploading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                            Subiendo...
-                          </span>
-                        ) : (
-                          "Enviar Comprobante"
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Voucher ya subido – preview */}
-                  {uploaded && reservation.voucher_image && (
-                    <div>
-                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
-                        Comprobante enviado
-                      </h3>
-                      <div className="border border-green-200 bg-green-50 rounded-lg p-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={reservation.voucher_image}
-                          alt="Voucher de pago"
-                          className="w-full max-h-64 object-contain rounded"
-                        />
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
+
+                  {/* Voucher upload/preview se muestra en la sidebar */}
                 </div>
               </div>
             )}
@@ -692,6 +680,54 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                       <p className="text-xs text-gray-600 mt-0.5">{statusAlert.text}</p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Voucher subido – sidebar */}
+              {uploaded && reservation.voucher_image && (
+                <div className="mt-4 border border-green-200 bg-green-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-green-800 mb-2">Comprobante enviado</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={reservation.voucher_image} alt="Voucher" className="w-full max-h-48 object-contain rounded" />
+                </div>
+              )}
+
+              {/* Upload voucher – sidebar */}
+              {showPaymentSection && !uploaded && (
+                <div className="mt-4">
+                  <h4 className="font-sans font-semibold text-xs text-primary-900 mb-2">Subir comprobante</h4>
+                  {!preview ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-sand-300 rounded-lg p-5 text-center cursor-pointer hover:border-accent-400 hover:bg-sand-50 transition-colors"
+                    >
+                      <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                      <p className="text-gray-500 font-sans text-xs">Seleccionar imagen</p>
+                      <p className="text-gray-400 font-sans text-[10px]">JPEG, PNG, WebP — Max 5 MB</p>
+                      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg overflow-hidden border border-sand-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={preview} alt="Preview" className="w-full max-h-48 object-contain bg-sand-50" />
+                        <button
+                          onClick={() => { setFile(null); setPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                          className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm"
+                        >
+                          <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-gray-500">{file?.name}</p>
+                    </div>
+                  )}
+                  <button onClick={handleUpload} disabled={!file || uploading} className="btn-primary w-full !py-2.5 mt-3 disabled:opacity-50 text-sm">
+                    {uploading ? "Subiendo..." : "Enviar Comprobante"}
+                  </button>
                 </div>
               )}
             </div>
