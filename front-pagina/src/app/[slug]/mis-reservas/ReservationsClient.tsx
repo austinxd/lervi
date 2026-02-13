@@ -159,7 +159,7 @@ export default function ReservationsClient({ slug }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
+      <div className="bg-sand-50 flex items-center justify-center py-20">
         <svg
           className="animate-spin h-8 w-8 text-primary-700"
           viewBox="0 0 24 24"
@@ -184,7 +184,7 @@ export default function ReservationsClient({ slug }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50">
+    <div className="bg-sand-50 py-2">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
