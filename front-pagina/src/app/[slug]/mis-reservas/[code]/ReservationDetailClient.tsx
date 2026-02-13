@@ -316,32 +316,19 @@ export default function ReservationDetailClient({ slug, code }: Props) {
 
   return (
     <div className="min-h-screen bg-sand-50">
-      {/* ── Header ── */}
-      <div className="bg-primary-900 py-12 sm:py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/mis-reservas"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-sans mb-6 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Volver a Mis Reservas
-          </Link>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h1 className="font-serif text-2xl sm:text-3xl text-white">
-              Detalles de Reserva
-            </h1>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold self-start ${STATUS_COLORS[status] || "bg-gray-100 text-gray-800"}`}>
-              {STATUS_LABELS[status] || status}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* ── Content ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Volver */}
+        <Link
+          href="/mis-reservas"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-primary-900 text-sm font-sans mb-6 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver a Mis Reservas
+        </Link>
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-sans text-sm mb-6">
             {error}
