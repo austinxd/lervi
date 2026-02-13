@@ -78,8 +78,8 @@ export default function BookingClient({ slug }: Props) {
         return;
       }
       setConfirmation(result);
-    } catch {
-      setError("No se pudo completar la reserva. Intente nuevamente.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo completar la reserva. Intente nuevamente.");
     } finally {
       setSubmitting(false);
     }

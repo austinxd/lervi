@@ -72,7 +72,10 @@ export async function createReservation(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Error al crear la reserva");
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || Object.values(err || {}).flat().join(". ") || "Error al crear la reserva");
+  }
   return res.json();
 }
 
@@ -85,7 +88,10 @@ export async function createGroupReservation(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Error al crear la reserva grupal");
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || Object.values(err || {}).flat().join(". ") || "Error al crear la reserva grupal");
+  }
   return res.json();
 }
 

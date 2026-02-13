@@ -170,18 +170,18 @@ class PublicReservationSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
-    phone = serializers.CharField(max_length=30, required=False, default="")
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
     document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
     document_number = serializers.CharField(max_length=50)
-    nationality = serializers.CharField(max_length=100, required=False, default="")
+    nationality = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
 
     room_type_id = serializers.UUIDField()
     check_in_date = serializers.DateField()
     check_out_date = serializers.DateField()
     adults = serializers.IntegerField(min_value=1, default=1)
     children = serializers.IntegerField(min_value=0, default=0)
-    special_requests = serializers.CharField(required=False, default="")
-    promotion_code = serializers.CharField(required=False, default="")
+    special_requests = serializers.CharField(required=False, allow_blank=True, default="")
+    promotion_code = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, data):
         if data["check_out_date"] <= data["check_in_date"]:
@@ -240,14 +240,14 @@ class PublicGroupReservationSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
-    phone = serializers.CharField(max_length=30, required=False, default="")
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
     document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
     document_number = serializers.CharField(max_length=50)
-    nationality = serializers.CharField(max_length=100, required=False, default="")
+    nationality = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     check_in_date = serializers.DateField()
     check_out_date = serializers.DateField()
     rooms = GroupRoomItemSerializer(many=True)
-    special_requests = serializers.CharField(required=False, default="")
+    special_requests = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate_rooms(self, value):
         if len(value) < 2:
