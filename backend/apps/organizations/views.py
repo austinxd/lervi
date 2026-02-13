@@ -75,6 +75,7 @@ class OrgBankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BankAccountSerializer
     queryset = BankAccount.objects.all()
     permission_classes = [IsOwnerOrManager]
+    pagination_class = None
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -92,6 +93,7 @@ class PropertyBankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BankAccountSerializer
     queryset = BankAccount.objects.all()
     permission_classes = [IsOwnerOrManager]
+    pagination_class = None
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
