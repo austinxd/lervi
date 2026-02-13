@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getGuestReservations, cancelGuestReservation } from "@/lib/api";
+import { getGuestReservations, cancelGuestReservation, ApiError } from "@/lib/api";
 import { getGuestToken, getGuestName, clearGuestSession } from "@/lib/guest-auth";
 import type { GuestReservation } from "@/lib/types";
 
@@ -66,9 +66,13 @@ export default function ReservationsClient({ slug }: Props) {
     setGuestName(getGuestName());
     getGuestReservations(slug, token)
       .then(setReservations)
-      .catch(() => {
-        clearGuestSession();
-        router.replace(`/${slug}/iniciar-sesion`);
+      .catch((err) => {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          clearGuestSession();
+          router.replace(`/${slug}/iniciar-sesion`);
+        } else {
+          setError("Error al cargar sus reservas. Intente nuevamente.");
+        }
       })
       .finally(() => setLoading(false));
   }, [slug, router]);

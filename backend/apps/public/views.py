@@ -346,19 +346,36 @@ class CreateReservationView(APIView):
         )
         total = calculate_total(nightly_prices)
 
-        # Get or create guest
-        guest, _ = Guest.objects.get_or_create(
-            organization=org,
-            email=data["email"],
-            defaults={
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-                "phone": data.get("phone", ""),
-                "document_type": data.get("document_type", ""),
-                "document_number": data.get("document_number", ""),
-                "nationality": data.get("nationality", ""),
-            },
-        )
+        # Get or create guest — prefer document lookup (consistent with
+        # registration/login) and fall back to email for legacy callers.
+        doc_type = data.get("document_type", "")
+        doc_number = data.get("document_number", "")
+        if doc_type and doc_number:
+            guest, _ = Guest.objects.get_or_create(
+                organization=org,
+                document_type=doc_type,
+                document_number=doc_number,
+                defaults={
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "email": data["email"],
+                    "phone": data.get("phone", ""),
+                    "nationality": data.get("nationality", ""),
+                },
+            )
+        else:
+            guest, _ = Guest.objects.get_or_create(
+                organization=org,
+                email=data["email"],
+                defaults={
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "phone": data.get("phone", ""),
+                    "document_type": doc_type,
+                    "document_number": doc_number,
+                    "nationality": data.get("nationality", ""),
+                },
+            )
 
         # Check if property has active bank accounts
         has_bank_accounts = BankAccount.objects.filter(
@@ -418,19 +435,35 @@ class CreateGroupReservationView(APIView):
         properties = get_org_properties(org)
         group_code = uuid.uuid4().hex[:8].upper()
 
-        # Get or create guest (una sola vez)
-        guest, _ = Guest.objects.get_or_create(
-            organization=org,
-            email=data["email"],
-            defaults={
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-                "phone": data.get("phone", ""),
-                "document_type": data.get("document_type", ""),
-                "document_number": data.get("document_number", ""),
-                "nationality": data.get("nationality", ""),
-            },
-        )
+        # Get or create guest (una sola vez) — prefer document lookup
+        doc_type = data.get("document_type", "")
+        doc_number = data.get("document_number", "")
+        if doc_type and doc_number:
+            guest, _ = Guest.objects.get_or_create(
+                organization=org,
+                document_type=doc_type,
+                document_number=doc_number,
+                defaults={
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "email": data["email"],
+                    "phone": data.get("phone", ""),
+                    "nationality": data.get("nationality", ""),
+                },
+            )
+        else:
+            guest, _ = Guest.objects.get_or_create(
+                organization=org,
+                email=data["email"],
+                defaults={
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "phone": data.get("phone", ""),
+                    "document_type": doc_type,
+                    "document_number": doc_number,
+                    "nationality": data.get("nationality", ""),
+                },
+            )
 
         active_statuses = [
             Reservation.OperationalStatus.INCOMPLETE,
@@ -696,28 +729,66 @@ class GuestRegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        if Guest.objects.filter(
+        # 1. Check if a guest with the same document already exists
+        existing_by_doc = Guest.objects.filter(
             organization=org,
             document_type=data["document_type"],
             document_number=data["document_number"],
-        ).exists():
-            return Response(
-                {"detail": "Ya existe una cuenta con este documento. Inicie sesión."},
-                status=status.HTTP_409_CONFLICT,
-            )
+        ).first()
 
-        guest = Guest.objects.create(
-            organization=org,
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            email=data["email"],
-            phone=data.get("phone", ""),
-            document_type=data["document_type"],
-            document_number=data["document_number"],
-            nationality=data.get("nationality", ""),
-        )
-        guest.set_password(data["password"])
-        guest.save(update_fields=["password_hash"])
+        if existing_by_doc:
+            if existing_by_doc.has_password:
+                return Response(
+                    {"detail": "Ya existe una cuenta con este documento. Inicie sesión."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            # Guest exists from a prior reservation but no password — claim it
+            existing_by_doc.first_name = data["first_name"]
+            existing_by_doc.last_name = data["last_name"]
+            existing_by_doc.email = data["email"]
+            existing_by_doc.phone = data.get("phone", "")
+            existing_by_doc.nationality = data.get("nationality", "")
+            existing_by_doc.set_password(data["password"])
+            existing_by_doc.save()
+            guest = existing_by_doc
+
+        else:
+            # 2. Check if a guest with the same email exists (from old reservations)
+            existing_by_email = Guest.objects.filter(
+                organization=org,
+                email=data["email"],
+            ).first()
+
+            if existing_by_email and not existing_by_email.has_password:
+                # Claim existing guest record — update with document info + password
+                existing_by_email.first_name = data["first_name"]
+                existing_by_email.last_name = data["last_name"]
+                existing_by_email.phone = data.get("phone", "")
+                existing_by_email.document_type = data["document_type"]
+                existing_by_email.document_number = data["document_number"]
+                existing_by_email.nationality = data.get("nationality", "")
+                existing_by_email.set_password(data["password"])
+                existing_by_email.save()
+                guest = existing_by_email
+            elif existing_by_email and existing_by_email.has_password:
+                return Response(
+                    {"detail": "Ya existe una cuenta con este email. Inicie sesión."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            else:
+                # 3. No existing guest — create new
+                guest = Guest.objects.create(
+                    organization=org,
+                    first_name=data["first_name"],
+                    last_name=data["last_name"],
+                    email=data["email"],
+                    phone=data.get("phone", ""),
+                    document_type=data["document_type"],
+                    document_number=data["document_number"],
+                    nationality=data.get("nationality", ""),
+                )
+                guest.set_password(data["password"])
+                guest.save(update_fields=["password_hash"])
 
         return Response({
             "access": _generate_guest_token(guest),

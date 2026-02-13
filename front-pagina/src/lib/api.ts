@@ -183,6 +183,14 @@ export async function getGuestProfile(
   return res.json();
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export async function getGuestReservations(
   slug: string,
   token: string
@@ -190,7 +198,7 @@ export async function getGuestReservations(
   const res = await fetch(`${PUBLIC_API}/${slug}/mis-reservas/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Error al obtener reservas");
+  if (!res.ok) throw new ApiError("Error al obtener reservas", res.status);
   return res.json();
 }
 
