@@ -39,6 +39,7 @@ export default function GroupBookingClient({ slug }: Props) {
   const [phone, setPhone] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [nationality, setNationality] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function GroupBookingClient({ slug }: Props) {
         phone,
         document_type: documentType,
         document_number: documentNumber,
+        nationality: documentType !== "dni" ? nationality : "",
         check_in_date: combo.check_in,
         check_out_date: combo.check_out,
         rooms,
@@ -342,7 +344,7 @@ export default function GroupBookingClient({ slug }: Props) {
                   <select
                     required
                     value={documentType}
-                    onChange={(e) => setDocumentType(e.target.value)}
+                    onChange={(e) => { setDocumentType(e.target.value); if (e.target.value === "dni") setNationality(""); }}
                     className="input-field"
                   >
                     <option value="">Seleccionar</option>
@@ -366,6 +368,43 @@ export default function GroupBookingClient({ slug }: Props) {
                   />
                 </div>
               </div>
+
+              {documentType && documentType !== "dni" && (
+                <div>
+                  <label className="label-field">
+                    Nacionalidad <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    required
+                    value={nationality}
+                    onChange={(e) => setNationality(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Seleccionar nacionalidad</option>
+                    <option value="PE">Peruana</option>
+                    <option value="CO">Colombiana</option>
+                    <option value="EC">Ecuatoriana</option>
+                    <option value="BO">Boliviana</option>
+                    <option value="CL">Chilena</option>
+                    <option value="AR">Argentina</option>
+                    <option value="BR">Brasileña</option>
+                    <option value="MX">Mexicana</option>
+                    <option value="VE">Venezolana</option>
+                    <option value="US">Estadounidense</option>
+                    <option value="CA">Canadiense</option>
+                    <option value="ES">Española</option>
+                    <option value="FR">Francesa</option>
+                    <option value="DE">Alemana</option>
+                    <option value="IT">Italiana</option>
+                    <option value="GB">Británica</option>
+                    <option value="JP">Japonesa</option>
+                    <option value="CN">China</option>
+                    <option value="KR">Coreana</option>
+                    <option value="AU">Australiana</option>
+                    <option value="OTHER">Otra</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="label-field">Solicitudes especiales</label>

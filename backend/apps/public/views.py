@@ -354,6 +354,7 @@ class CreateReservationView(APIView):
                 "phone": data.get("phone", ""),
                 "document_type": data.get("document_type", ""),
                 "document_number": data.get("document_number", ""),
+                "nationality": data.get("nationality", ""),
             },
         )
 
@@ -425,6 +426,7 @@ class CreateGroupReservationView(APIView):
                 "phone": data.get("phone", ""),
                 "document_type": data.get("document_type", ""),
                 "document_number": data.get("document_number", ""),
+                "nationality": data.get("nationality", ""),
             },
         )
 

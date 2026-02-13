@@ -7,10 +7,11 @@ import DataTable, { Column } from '../../components/DataTable';
 import { formatDate } from '../../utils/formatters';
 import type { Guest } from '../../interfaces/types';
 import {
-  Dialog, DialogActions, DialogContent, DialogTitle, TextField, Grid, FormControlLabel, Switch,
+  Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Grid, FormControlLabel, Switch,
 } from '@mui/material';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
+import { DOCUMENT_TYPE_OPTIONS, DOCUMENT_TYPE_LABELS, NATIONALITY_OPTIONS } from '../../utils/statusLabels';
 
 export default function GuestList() {
   const navigate = useNavigate();
@@ -22,7 +23,8 @@ export default function GuestList() {
 
   const { data } = useGetGuestsQuery({ page: page + 1, search: search || undefined });
   const [createGuest, { isLoading: creating }] = useCreateGuestMutation();
-  const { register, handleSubmit, reset } = useForm<Partial<Guest>>();
+  const { register, handleSubmit, reset, control, watch } = useForm<Partial<Guest>>();
+  const watchDocType = watch('document_type');
 
   const handleSearch = (val: string) => {
     clearTimeout(searchTimer.current);
@@ -45,7 +47,7 @@ export default function GuestList() {
     { id: 'name', label: 'Nombre', render: (r) => `${r.first_name} ${r.last_name}` },
     { id: 'email', label: 'Email', render: (r) => r.email || '—' },
     { id: 'phone', label: 'Teléfono', render: (r) => r.phone || '—' },
-    { id: 'doc', label: 'Documento', render: (r) => r.document_number ? `${r.document_type?.toUpperCase()} ${r.document_number}` : '—' },
+    { id: 'doc', label: 'Documento', render: (r) => r.document_number ? `${DOCUMENT_TYPE_LABELS[r.document_type] || r.document_type?.toUpperCase() || ''} ${r.document_number}` : '—' },
     { id: 'vip', label: 'VIP', render: (r) => r.is_vip ? <Chip label="VIP" size="small" color="secondary" /> : null },
     { id: 'created', label: 'Creado', render: (r) => formatDate(r.created_at) },
   ];
@@ -88,14 +90,26 @@ export default function GuestList() {
                 <TextField {...register('phone')} label="Teléfono" fullWidth />
               </Grid>
               <Grid item xs={6}>
-                <TextField {...register('document_type')} label="Tipo doc." fullWidth />
+                <Controller name="document_type" control={control} defaultValue="" render={({ field }) => (
+                  <TextField {...field} select label="Tipo doc." fullWidth>
+                    <MenuItem value="">— Sin tipo —</MenuItem>
+                    {DOCUMENT_TYPE_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                  </TextField>
+                )} />
               </Grid>
               <Grid item xs={6}>
                 <TextField {...register('document_number')} label="Nro. documento" fullWidth />
               </Grid>
-              <Grid item xs={6}>
-                <TextField {...register('nationality')} label="Nacionalidad" fullWidth />
-              </Grid>
+              {watchDocType && watchDocType !== 'dni' && (
+                <Grid item xs={6}>
+                  <Controller name="nationality" control={control} defaultValue="" render={({ field }) => (
+                    <TextField {...field} select label="Nacionalidad" fullWidth>
+                      <MenuItem value="">— Sin especificar —</MenuItem>
+                      {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                    </TextField>
+                  )} />
+                </Grid>
+              )}
               <Grid item xs={6}>
                 <FormControlLabel control={<Switch {...register('is_vip')} />} label="VIP" />
               </Grid>

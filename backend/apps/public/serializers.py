@@ -173,6 +173,7 @@ class PublicReservationSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=30, required=False, default="")
     document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
     document_number = serializers.CharField(max_length=50)
+    nationality = serializers.CharField(max_length=100, required=False, default="")
 
     room_type_id = serializers.UUIDField()
     check_in_date = serializers.DateField()
@@ -242,6 +243,7 @@ class PublicGroupReservationSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=30, required=False, default="")
     document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
     document_number = serializers.CharField(max_length=50)
+    nationality = serializers.CharField(max_length=100, required=False, default="")
     check_in_date = serializers.DateField()
     check_out_date = serializers.DateField()
     rooms = GroupRoomItemSerializer(many=True)

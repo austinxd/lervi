@@ -63,6 +63,48 @@ export const ORIGIN_TYPE_LABELS: Record<string, string> = {
   other: 'Otro',
 };
 
+export const DOCUMENT_TYPE_OPTIONS = [
+  { value: 'dni', label: 'DNI' },
+  { value: 'passport', label: 'Pasaporte' },
+  { value: 'ce', label: 'Carnet de Extranjería' },
+  { value: 'other', label: 'Otro' },
+];
+
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  dni: 'DNI',
+  passport: 'Pasaporte',
+  ce: 'Carnet de Extranjería',
+  other: 'Otro',
+};
+
+export const NATIONALITY_OPTIONS = [
+  { value: 'PE', label: 'Peruana' },
+  { value: 'CO', label: 'Colombiana' },
+  { value: 'EC', label: 'Ecuatoriana' },
+  { value: 'BO', label: 'Boliviana' },
+  { value: 'CL', label: 'Chilena' },
+  { value: 'AR', label: 'Argentina' },
+  { value: 'BR', label: 'Brasileña' },
+  { value: 'MX', label: 'Mexicana' },
+  { value: 'VE', label: 'Venezolana' },
+  { value: 'PY', label: 'Paraguaya' },
+  { value: 'UY', label: 'Uruguaya' },
+  { value: 'CR', label: 'Costarricense' },
+  { value: 'PA', label: 'Panameña' },
+  { value: 'US', label: 'Estadounidense' },
+  { value: 'CA', label: 'Canadiense' },
+  { value: 'ES', label: 'Española' },
+  { value: 'FR', label: 'Francesa' },
+  { value: 'DE', label: 'Alemana' },
+  { value: 'IT', label: 'Italiana' },
+  { value: 'GB', label: 'Británica' },
+  { value: 'JP', label: 'Japonesa' },
+  { value: 'CN', label: 'China' },
+  { value: 'KR', label: 'Coreana' },
+  { value: 'AU', label: 'Australiana' },
+  { value: 'OTHER', label: 'Otra' },
+];
+
 export const ROOM_STATUS_TRANSITIONS: Record<string, string[]> = {
   available: ['occupied', 'blocked', 'maintenance'],
   occupied: ['dirty'],

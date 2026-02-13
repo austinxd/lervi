@@ -154,6 +154,7 @@ export interface GroupReservationRequest {
   phone?: string;
   document_type: string;
   document_number: string;
+  nationality?: string;
   check_in_date: string;
   check_out_date: string;
   rooms: GroupRoomItem[];
@@ -200,6 +201,7 @@ export interface ReservationRequest {
   phone?: string;
   document_type?: string;
   document_number?: string;
+  nationality?: string;
   room_type_id: string;
   check_in_date: string;
   check_out_date: string;
