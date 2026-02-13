@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createGroupReservation } from "@/lib/api";
+import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
 import type { GroupReservationConfirmation } from "@/lib/types";
 
 interface CombinationData {
@@ -23,9 +24,10 @@ interface CombinationData {
 
 interface Props {
   slug: string;
+  defaultCountry?: string;
 }
 
-export default function GroupBookingClient({ slug }: Props) {
+export default function GroupBookingClient({ slug, defaultCountry = "PE" }: Props) {
   const router = useRouter();
   const [combo, setCombo] = useState<CombinationData | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +38,7 @@ export default function GroupBookingClient({ slug }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState(defaultCountry);
   const [phone, setPhone] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
@@ -64,11 +67,12 @@ export default function GroupBookingClient({ slug }: Props) {
         }))
       );
 
+      const fullPhone = phone ? `${getDialCode(phoneCountry)} ${phone}` : "";
       const result = await createGroupReservation(slug, {
         first_name: firstName,
         last_name: lastName,
         email,
-        phone,
+        phone: fullPhone,
         document_type: documentType,
         document_number: documentNumber,
         nationality,
@@ -326,13 +330,26 @@ export default function GroupBookingClient({ slug }: Props) {
                 </div>
                 <div>
                   <label className="label-field">Telefono</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input-field"
-                    placeholder="+51 999 999 999"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={phoneCountry}
+                      onChange={(e) => setPhoneCountry(e.target.value)}
+                      className="input-field w-[120px] flex-shrink-0"
+                    >
+                      {COUNTRY_PHONE_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.dial}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="input-field flex-1"
+                      placeholder="999 999 999"
+                    />
+                  </div>
                 </div>
               </div>
 

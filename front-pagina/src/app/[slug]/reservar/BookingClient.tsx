@@ -11,6 +11,7 @@ import {
   getGuestProfile,
 } from "@/lib/api";
 import { getGuestToken, getGuestName, setGuestSession } from "@/lib/guest-auth";
+import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
 import PriceBreakdown from "@/components/PriceBreakdown";
 import type {
   AvailabilityResult,
@@ -20,6 +21,7 @@ import type {
 
 interface Props {
   slug: string;
+  defaultCountry?: string;
 }
 
 const DOCUMENT_TYPES = [
@@ -56,7 +58,7 @@ const NATIONALITIES = [
 type Step = "auth" | "form";
 type AuthTab = "login" | "register";
 
-export default function BookingClient({ slug }: Props) {
+export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomTypeId = searchParams.get("room_type") || "";
@@ -87,6 +89,7 @@ export default function BookingClient({ slug }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState(defaultCountry);
   const [phone, setPhone] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
@@ -128,7 +131,16 @@ export default function BookingClient({ slug }: Props) {
     setFirstName(profile.first_name);
     setLastName(profile.last_name);
     setEmail(profile.email);
-    setPhone(profile.phone);
+    // Parse phone: if it starts with a known dial code, split it
+    if (profile.phone) {
+      const match = COUNTRY_PHONE_CODES.find((c) => profile.phone.startsWith(c.dial));
+      if (match) {
+        setPhoneCountry(match.code);
+        setPhone(profile.phone.slice(match.dial.length).trim());
+      } else {
+        setPhone(profile.phone);
+      }
+    }
     setDocumentType(profile.document_type);
     setDocumentNumber(profile.document_number);
     setNationality(profile.nationality);
@@ -140,11 +152,12 @@ export default function BookingClient({ slug }: Props) {
     setAuthError(null);
     setAuthSubmitting(true);
     try {
+      const fullPhone = phone ? `${getDialCode(phoneCountry)} ${phone}` : "";
       const session = await guestRegister(slug, {
         first_name: firstName,
         last_name: lastName,
         email,
-        phone,
+        phone: fullPhone,
         document_type: documentType,
         document_number: documentNumber,
         nationality,
@@ -187,11 +200,12 @@ export default function BookingClient({ slug }: Props) {
     setSubmitting(true);
     setError(null);
     try {
+      const fullPhone = phone ? `${getDialCode(phoneCountry)} ${phone}` : "";
       const result = await createReservation(slug, {
         first_name: firstName,
         last_name: lastName,
         email,
-        phone,
+        phone: fullPhone,
         document_type: documentType,
         document_number: documentNumber,
         nationality,
@@ -396,7 +410,20 @@ export default function BookingClient({ slug }: Props) {
                     </div>
                     <div>
                       <label className="label-field">Telefono</label>
-                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field" placeholder="+51 999 999 999" />
+                      <div className="flex gap-2">
+                        <select
+                          value={phoneCountry}
+                          onChange={(e) => setPhoneCountry(e.target.value)}
+                          className="input-field w-[120px] flex-shrink-0"
+                        >
+                          {COUNTRY_PHONE_CODES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.flag} {c.dial}
+                            </option>
+                          ))}
+                        </select>
+                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field flex-1" placeholder="999 999 999" />
+                      </div>
                     </div>
                   </div>
 
@@ -560,7 +587,7 @@ export default function BookingClient({ slug }: Props) {
                   {phone && (
                     <div>
                       <span className="text-gray-400 text-xs uppercase tracking-wider">Telefono</span>
-                      <p className="text-primary-900 font-medium">{phone}</p>
+                      <p className="text-primary-900 font-medium">{getDialCode(phoneCountry)} {phone}</p>
                     </div>
                   )}
                 </div>

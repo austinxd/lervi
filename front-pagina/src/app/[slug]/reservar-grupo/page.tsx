@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getOrganizationInfo } from "@/lib/api";
 import GroupBookingClient from "./GroupBookingClient";
 
 export const metadata: Metadata = {
@@ -12,5 +13,7 @@ interface Props {
 
 export default async function GroupBookingPage({ params }: Props) {
   const { slug } = await params;
-  return <GroupBookingClient slug={slug} />;
+  const org = await getOrganizationInfo(slug);
+  const defaultCountry = org.properties?.[0]?.country || "PE";
+  return <GroupBookingClient slug={slug} defaultCountry={defaultCountry} />;
 }
