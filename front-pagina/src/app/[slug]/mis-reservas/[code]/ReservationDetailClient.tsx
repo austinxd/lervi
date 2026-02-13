@@ -59,10 +59,17 @@ function CopyButton({ text }: { text: string }) {
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("es-PE", {
-    weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
+  });
+}
+
+function formatDateShort(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "short",
   });
 }
 
@@ -76,8 +83,8 @@ function calculateNights(checkIn: string, checkOut: string): number {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  incomplete: "Incompleta",
-  pending: "Pendiente",
+  incomplete: "Pendiente de pago",
+  pending: "En validacion",
   confirmed: "Confirmada",
   check_in: "Check-in",
   check_out: "Check-out",
@@ -86,10 +93,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  incomplete: "bg-orange-100 text-orange-800",
-  pending: "bg-yellow-100 text-yellow-800",
+  incomplete: "bg-amber-100 text-amber-800",
+  pending: "bg-blue-100 text-blue-800",
   confirmed: "bg-green-100 text-green-800",
-  check_in: "bg-blue-100 text-blue-800",
+  check_in: "bg-green-100 text-green-800",
   check_out: "bg-gray-100 text-gray-800",
   cancelled: "bg-red-100 text-red-800",
   no_show: "bg-red-100 text-red-800",
@@ -192,25 +199,14 @@ export default function ReservationDetailClient({ slug, code }: Props) {
   /* ── Loading ── */
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32">
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <svg
-          className="animate-spin h-8 w-8 text-accent-500"
+          className="animate-spin h-8 w-8 text-primary-700"
           viewBox="0 0 24 24"
           fill="none"
         >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
       </div>
     );
@@ -222,9 +218,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
       <div>
         <div className="bg-primary-900 py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="font-serif text-4xl text-white">
-              Detalle de Reserva
-            </h1>
+            <h1 className="font-serif text-4xl text-white">Detalle de Reserva</h1>
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
@@ -240,51 +234,103 @@ export default function ReservationDetailClient({ slug, code }: Props) {
   }
 
   const status = reservation.operational_status;
-  const nights = calculateNights(
-    reservation.check_in_date,
-    reservation.check_out_date
-  );
+  const nights = calculateNights(reservation.check_in_date, reservation.check_out_date);
   const isIncomplete = status === "incomplete";
   const isPending = status === "pending";
   const isActive = isIncomplete || isPending;
-  const deadlineExpired =
-    isIncomplete && reservation.payment_deadline && countdown.expired;
-  const deadlineActive =
-    isIncomplete && reservation.payment_deadline && !countdown.expired;
+  const deadlineExpired = isIncomplete && reservation.payment_deadline && countdown.expired;
+  const deadlineActive = isIncomplete && reservation.payment_deadline && !countdown.expired;
   const isUrgent = countdown.total < 10 * 60 * 1000;
+  const showPaymentSection = (deadlineActive && !uploaded) || false;
+
+  /* ── Status alert content ── */
+  const statusAlert = (() => {
+    if (deadlineExpired) {
+      return {
+        bg: "bg-red-50 border-red-200",
+        icon: "text-red-500",
+        title: "Plazo expirado",
+        text: "El plazo para subir el comprobante ha expirado. Su reserva sera cancelada automaticamente.",
+        iconPath: "M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z",
+      };
+    }
+    if (uploaded || isPending) {
+      return {
+        bg: "bg-blue-50 border-blue-200",
+        icon: "text-blue-500",
+        title: "Comprobante en revision",
+        text: "Estamos validando su deposito. Le notificaremos cuando su reserva sea confirmada.",
+        iconPath: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z",
+      };
+    }
+    if (status === "confirmed") {
+      return {
+        bg: "bg-green-50 border-green-200",
+        icon: "text-green-500",
+        title: "Reserva confirmada",
+        text: "Su reserva esta confirmada. Le esperamos en las fechas indicadas.",
+        iconPath: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+      };
+    }
+    if (status === "check_in") {
+      return {
+        bg: "bg-green-50 border-green-200",
+        icon: "text-green-500",
+        title: "Check-in realizado",
+        text: "Bienvenido, disfrute su estancia.",
+        iconPath: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+      };
+    }
+    if (status === "cancelled") {
+      return {
+        bg: "bg-red-50 border-red-200",
+        icon: "text-red-400",
+        title: "Reserva cancelada",
+        text: "Esta reserva ha sido cancelada.",
+        iconPath: "M6 18L18 6M6 6l12 12",
+      };
+    }
+    if (status === "no_show") {
+      return {
+        bg: "bg-gray-50 border-gray-200",
+        icon: "text-gray-400",
+        title: "No-show",
+        text: "No-show registrado para esta reserva.",
+        iconPath: "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z",
+      };
+    }
+    if (status === "check_out") {
+      return {
+        bg: "bg-gray-50 border-gray-200",
+        icon: "text-gray-400",
+        title: "Check-out completado",
+        text: "Gracias por su visita.",
+        iconPath: "M4.5 12.75l6 6 9-13.5",
+      };
+    }
+    return null;
+  })();
 
   return (
-    <div>
+    <div className="min-h-screen bg-sand-50">
       {/* ── Header ── */}
-      <div className="bg-primary-900 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="bg-primary-900 py-12 sm:py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             href="/mis-reservas"
             className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-sans mb-6 transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Volver a Mis Reservas
           </Link>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <h1 className="font-serif text-3xl sm:text-4xl text-white">
-              Reserva {reservation.confirmation_code}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h1 className="font-serif text-2xl sm:text-3xl text-white">
+              Detalles de Reserva
             </h1>
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[status] || "bg-gray-100 text-gray-800"}`}
-            >
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold self-start ${STATUS_COLORS[status] || "bg-gray-100 text-gray-800"}`}>
               {STATUS_LABELS[status] || status}
             </span>
           </div>
@@ -292,426 +338,394 @@ export default function ReservationDetailClient({ slug, code }: Props) {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg font-sans text-sm mb-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-sans text-sm mb-6">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* ── Mobile: Estado de la Reserva (arriba) ── */}
+        <div className="lg:hidden mb-6 space-y-4">
+          {/* Timer prominente */}
+          {deadlineActive && (
+            <div className={`rounded-lg p-4 border ${isUrgent ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+              <div className="flex items-center gap-3">
+                <svg className={`w-5 h-5 shrink-0 ${isUrgent ? "text-red-500" : "text-amber-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className={`font-sans font-semibold text-xs ${isUrgent ? "text-red-700" : "text-amber-700"}`}>
+                    Tiempo restante para enviar comprobante
+                  </p>
+                  <p className={`font-mono text-2xl font-bold ${isUrgent ? "text-red-600" : "text-amber-600"}`}>
+                    {String(countdown.minutes).padStart(2, "0")}:{String(countdown.seconds).padStart(2, "0")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Status alert */}
+          {statusAlert && !deadlineActive && (
+            <div className={`rounded-lg p-4 border ${statusAlert.bg}`}>
+              <div className="flex items-center gap-3">
+                <svg className={`w-5 h-5 shrink-0 ${statusAlert.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={statusAlert.iconPath} />
+                </svg>
+                <div>
+                  <p className="font-sans font-semibold text-sm text-gray-800">{statusAlert.title}</p>
+                  <p className="text-sm text-gray-600">{statusAlert.text}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Grid: 2/3 + 1/3 ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* ── Main column (2/3) ── */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Countdown timer – incomplete + deadline activo */}
-            {deadlineActive && (
-              <div
-                className={`rounded-lg p-6 border ${
-                  isUrgent
-                    ? "bg-red-50 border-red-200"
-                    : "bg-amber-50 border-amber-200"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg
-                    className={`w-6 h-6 ${isUrgent ? "text-red-500" : "text-amber-500"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div>
-                    <p
-                      className={`font-sans font-semibold text-sm ${isUrgent ? "text-red-700" : "text-amber-700"}`}
-                    >
-                      Tiempo restante para enviar comprobante
-                    </p>
-                    <p
-                      className={`font-serif text-3xl font-bold ${isUrgent ? "text-red-600" : "text-amber-600"}`}
-                    >
-                      {String(countdown.minutes).padStart(2, "0")}:
-                      {String(countdown.seconds).padStart(2, "0")}
-                    </p>
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* CARD 1: Detalles de la Reserva */}
+            <div className="bg-white rounded-lg border border-sand-200 shadow-sm overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="font-serif text-lg text-primary-900">Detalles de la Reserva</h2>
+                  <span className="font-mono text-sm font-semibold text-primary-700 bg-primary-50 px-3 py-1 rounded">
+                    {reservation.confirmation_code}
+                  </span>
+                </div>
+
+                {/* Grid de informacion al estilo Casa Austin */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-sand-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs text-gray-400 font-sans uppercase tracking-wider">Check-in</span>
+                    </div>
+                    <p className="font-medium text-primary-900 text-sm">{formatDate(reservation.check_in_date)}</p>
                   </div>
+                  <div className="bg-sand-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs text-gray-400 font-sans uppercase tracking-wider">Check-out</span>
+                    </div>
+                    <p className="font-medium text-primary-900 text-sm">{formatDate(reservation.check_out_date)}</p>
+                  </div>
+                  <div className="bg-sand-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      </svg>
+                      <span className="text-xs text-gray-400 font-sans uppercase tracking-wider">Huesped</span>
+                    </div>
+                    <p className="font-medium text-primary-900 text-sm">{reservation.guest_name}</p>
+                  </div>
+                  <div className="bg-sand-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                      </svg>
+                      <span className="text-xs text-gray-400 font-sans uppercase tracking-wider">Noches</span>
+                    </div>
+                    <p className="font-medium text-primary-900 text-sm">{nights} {nights === 1 ? "noche" : "noches"}</p>
+                  </div>
+                </div>
+
+                {/* Habitacion */}
+                <div className="mt-4 pt-4 border-t border-sand-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 font-sans uppercase tracking-wider">Habitacion</p>
+                      <p className="font-semibold text-primary-900">{reservation.room_type}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 2: Informacion de Pago – solo si hay bank accounts y (deadline activo o uploaded) */}
+            {(showPaymentSection || uploaded) && (
+              <div className="bg-white rounded-lg border border-sand-200 shadow-sm overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 className="font-serif text-lg text-primary-900">Informacion de Pago</h2>
+                  </div>
+
+                  {/* Total */}
+                  <div className="bg-sand-50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500 font-sans">Total de la reserva</span>
+                      <span className="font-serif text-2xl font-bold text-primary-900">
+                        {reservation.currency} {reservation.total_amount}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Importante: depositar */}
+                  {showPaymentSection && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                      <p className="text-sm text-blue-700 font-sans">
+                        <span className="font-semibold">Importante:</span> Para confirmar la reserva
+                        debe realizar la transferencia y subir el comprobante dentro del plazo indicado.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Bank accounts */}
+                  {showPaymentSection && bankAccounts.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
+                        Datos para la transferencia
+                      </h3>
+                      <div className="space-y-3">
+                        {bankAccounts.map((account) => (
+                          <div key={account.id} className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-sans font-semibold text-sm text-gray-900">
+                                {account.bank_name}
+                              </h4>
+                              <span className="text-[10px] font-sans font-medium text-gray-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-amber-200">
+                                {account.currency}
+                              </span>
+                            </div>
+                            <div className="space-y-2 text-sm font-sans">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-gray-500 text-xs">Titular:</span>{" "}
+                                  <span className="font-medium text-gray-900">{account.account_holder}</span>
+                                </div>
+                                <CopyButton text={account.account_holder} />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-gray-500 text-xs">N° cuenta:</span>{" "}
+                                  <span className="font-medium font-mono text-gray-900">{account.account_number}</span>
+                                </div>
+                                <CopyButton text={account.account_number} />
+                              </div>
+                              {account.cci && (
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-gray-500 text-xs">CCI:</span>{" "}
+                                    <span className="font-medium font-mono text-gray-900">{account.cci}</span>
+                                  </div>
+                                  <CopyButton text={account.cci} />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload voucher zone */}
+                  {showPaymentSection && (
+                    <div>
+                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
+                        Subir comprobante de pago
+                      </h3>
+
+                      {!preview ? (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="border-2 border-dashed border-sand-300 rounded-lg p-8 text-center cursor-pointer hover:border-accent-400 hover:bg-sand-50 transition-colors"
+                        >
+                          <svg className="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                          </svg>
+                          <p className="text-gray-500 font-sans text-sm mb-1">
+                            Haga clic para seleccionar una imagen
+                          </p>
+                          <p className="text-gray-400 font-sans text-xs">
+                            JPEG, PNG o WebP — Max 5 MB
+                          </p>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={handleFileChange}
+                            className="hidden"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="relative rounded-lg overflow-hidden border border-sand-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={preview}
+                              alt="Preview del comprobante"
+                              className="w-full max-h-80 object-contain bg-sand-50"
+                            />
+                            <button
+                              onClick={() => {
+                                setFile(null);
+                                setPreview(null);
+                                if (fileInputRef.current) fileInputRef.current.value = "";
+                              }}
+                              className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 font-sans">
+                            {file?.name} — {((file?.size ?? 0) / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleUpload}
+                        disabled={!file || uploading}
+                        className="btn-primary w-full !py-3.5 mt-4 disabled:opacity-50"
+                      >
+                        {uploading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Subiendo...
+                          </span>
+                        ) : (
+                          "Enviar Comprobante"
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Voucher ya subido – preview */}
+                  {uploaded && reservation.voucher_image && (
+                    <div>
+                      <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
+                        Comprobante enviado
+                      </h3>
+                      <div className="border border-green-200 bg-green-50 rounded-lg p-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={reservation.voucher_image}
+                          alt="Voucher de pago"
+                          className="w-full max-h-64 object-contain rounded"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Deadline expirado */}
+            {/* Deadline expirado — CTA buscar disponibilidad */}
             {deadlineExpired && (
-              <div className="rounded-lg p-6 border bg-red-50 border-red-200 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg
-                    className="w-8 h-8 text-red-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                    />
+              <div className="bg-white rounded-lg border border-red-200 shadow-sm p-6 text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                   </svg>
                 </div>
-                <h3 className="font-serif text-xl text-red-800 mb-2">
-                  Plazo Expirado
-                </h3>
-                <p className="text-red-600 font-sans text-sm mb-4">
-                  El plazo para subir el comprobante de pago ha expirado. Su
-                  reserva sera cancelada automaticamente.
+                <h3 className="font-serif text-lg text-red-800 mb-2">Plazo Expirado</h3>
+                <p className="text-sm text-gray-500 font-sans mb-4">
+                  El plazo para subir el comprobante de pago ha expirado.
                 </p>
-                <Link
-                  href="/disponibilidad"
-                  className="btn-primary inline-block"
-                >
+                <Link href="/disponibilidad" className="btn-primary inline-block">
                   Buscar Nueva Disponibilidad
                 </Link>
               </div>
             )}
-
-            {/* Voucher uploaded success */}
-            {uploaded && (
-              <div className="rounded-lg p-6 border bg-green-50 border-green-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.5 12.75l6 6 9-13.5"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="font-sans font-semibold text-sm text-green-800">
-                      Comprobante recibido
-                    </p>
-                    <p className="text-green-600 text-sm">
-                      El hotel revisara su pago y confirmara su reserva en
-                      breve.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Confirmed / check_in status */}
-            {(status === "confirmed" || status === "check_in") && (
-              <div className="rounded-lg p-6 border bg-green-50 border-green-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="font-sans font-semibold text-sm text-green-800">
-                      {status === "confirmed"
-                        ? "Reserva Confirmada"
-                        : "Check-in Realizado"}
-                    </p>
-                    <p className="text-green-600 text-sm">
-                      {status === "confirmed"
-                        ? "Su reserva esta confirmada. Le esperamos en las fechas indicadas."
-                        : "Bienvenido, disfrute su estancia."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Cancelled / no_show / check_out */}
-            {(status === "cancelled" ||
-              status === "no_show" ||
-              status === "check_out") && (
-              <div className="rounded-lg p-6 border bg-gray-50 border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <svg
-                      className="w-5 h-5 text-gray-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="font-sans text-sm text-gray-600">
-                    {status === "cancelled"
-                      ? "Esta reserva ha sido cancelada."
-                      : status === "no_show"
-                        ? "No-show registrado para esta reserva."
-                        : "Check-out completado. Gracias por su visita."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Bank accounts – solo si incomplete + deadline activo y no uploaded */}
-            {deadlineActive && !uploaded && bankAccounts.length > 0 && (
-              <div>
-                <p className="section-subtitle">Datos bancarios</p>
-                <h3 className="font-serif text-xl text-primary-900 mb-6">
-                  Realice su transferencia a cualquiera de estas cuentas
-                </h3>
-                <div className="space-y-4">
-                  {bankAccounts.map((account) => (
-                    <div
-                      key={account.id}
-                      className="bg-white border border-sand-200 rounded-lg p-6"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-sans font-semibold text-primary-900">
-                          {account.bank_name}
-                        </h4>
-                        <span className="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider bg-sand-100 px-2 py-1 rounded">
-                          {account.currency}
-                        </span>
-                      </div>
-                      <div className="space-y-3 text-sm font-sans">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider">
-                              Titular
-                            </span>
-                            <span className="text-primary-800 font-medium">
-                              {account.account_holder}
-                            </span>
-                          </div>
-                          <CopyButton text={account.account_holder} />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider">
-                              N° de cuenta
-                            </span>
-                            <span className="text-primary-800 font-medium font-mono">
-                              {account.account_number}
-                            </span>
-                          </div>
-                          <CopyButton text={account.account_number} />
-                        </div>
-                        {account.cci && (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-gray-400 block text-xs uppercase tracking-wider">
-                                CCI
-                              </span>
-                              <span className="text-primary-800 font-medium font-mono">
-                                {account.cci}
-                              </span>
-                            </div>
-                            <CopyButton text={account.cci} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Upload voucher – solo si incomplete + deadline activo y no uploaded */}
-            {deadlineActive && !uploaded && (
-              <div>
-                <p className="section-subtitle">Comprobante de pago</p>
-                <h3 className="font-serif text-xl text-primary-900 mb-6">
-                  Suba su voucher de transferencia
-                </h3>
-
-                {!preview ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-sand-300 rounded-lg p-12 text-center cursor-pointer hover:border-accent-400 hover:bg-sand-50 transition-colors"
-                  >
-                    <svg
-                      className="w-12 h-12 text-gray-300 mx-auto mb-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                      />
-                    </svg>
-                    <p className="text-gray-500 font-sans text-sm mb-1">
-                      Haga clic para seleccionar una imagen
-                    </p>
-                    <p className="text-gray-400 font-sans text-xs">
-                      JPEG, PNG o WebP — Max 5 MB
-                    </p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="relative rounded-lg overflow-hidden border border-sand-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={preview}
-                        alt="Preview del comprobante"
-                        className="w-full max-h-96 object-contain bg-sand-50"
-                      />
-                      <button
-                        onClick={() => {
-                          setFile(null);
-                          setPreview(null);
-                          if (fileInputRef.current)
-                            fileInputRef.current.value = "";
-                        }}
-                        className="absolute top-3 right-3 bg-white/90 hover:bg-white rounded-full p-2 shadow-sm transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-500 font-sans">
-                      {file?.name} —{" "}
-                      {((file?.size ?? 0) / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                  className="btn-primary w-full !py-4 mt-6 disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <svg
-                        className="animate-spin h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Subiendo...
-                    </span>
-                  ) : (
-                    "Enviar Comprobante"
-                  )}
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* ── Sidebar (1/3) — Resumen de reserva ── */}
+          {/* ── Sidebar (1/3) ── */}
           <div className="space-y-6">
-            {/* Reservation summary */}
-            <div className="bg-white border border-sand-200 rounded-lg p-8 sticky top-28 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary-500 font-sans mb-4">
-                Resumen de reserva
-              </p>
 
-              <div className="space-y-3 text-sm font-sans">
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Codigo</span>
-                  <span className="text-primary-900 font-semibold font-mono">
-                    {reservation.confirmation_code}
-                  </span>
+            {/* Card: Estado de la Reserva – Desktop only */}
+            <div className="hidden lg:block bg-white rounded-lg border border-sand-200 shadow-sm p-6">
+              <h3 className="font-sans font-semibold text-sm text-primary-900 mb-4">Estado de la Reserva</h3>
+
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-4 ${STATUS_COLORS[status] || "bg-gray-100 text-gray-800"}`}>
+                {STATUS_LABELS[status] || status}
+              </span>
+
+              {/* Timer */}
+              {deadlineActive && (
+                <div className={`rounded-lg p-3 border mb-4 ${isUrgent ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+                  <div className="flex items-center gap-2">
+                    <svg className={`w-4 h-4 shrink-0 ${isUrgent ? "text-red-500" : "text-amber-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wider font-semibold ${isUrgent ? "text-red-600" : "text-amber-600"}`}>
+                        Tiempo restante
+                      </p>
+                      <p className={`font-mono text-xl font-bold ${isUrgent ? "text-red-600" : "text-amber-600"}`}>
+                        {String(countdown.minutes).padStart(2, "0")}:{String(countdown.seconds).padStart(2, "0")}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Habitacion</span>
-                  <span className="text-primary-800 font-medium">
-                    {reservation.room_type}
-                  </span>
+              )}
+
+              {/* Status alert */}
+              {statusAlert && (
+                <div className={`rounded-lg p-3 border ${statusAlert.bg}`}>
+                  <div className="flex items-start gap-2">
+                    <svg className={`w-4 h-4 shrink-0 mt-0.5 ${statusAlert.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={statusAlert.iconPath} />
+                    </svg>
+                    <div>
+                      <p className="font-sans font-semibold text-xs text-gray-800">{statusAlert.title}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{statusAlert.text}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Huesped</span>
-                  <span className="text-primary-800 font-medium">
-                    {reservation.guest_name}
-                  </span>
+              )}
+            </div>
+
+            {/* Card: Resumen de costos */}
+            <div className="bg-white rounded-lg border border-sand-200 shadow-sm p-6">
+              <h3 className="font-sans font-semibold text-sm text-primary-900 mb-4">Resumen</h3>
+              <div className="space-y-2 text-sm font-sans">
+                <div className="flex justify-between py-1.5">
+                  <span className="text-gray-500">Habitacion</span>
+                  <span className="text-primary-800 font-medium">{reservation.room_type}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Check-in</span>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-gray-500">Fechas</span>
                   <span className="text-primary-800 font-medium text-right">
-                    {formatDate(reservation.check_in_date)}
+                    {formatDateShort(reservation.check_in_date)} — {formatDateShort(reservation.check_out_date)}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Check-out</span>
-                  <span className="text-primary-800 font-medium text-right">
-                    {formatDate(reservation.check_out_date)}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-sand-100">
-                  <span className="text-gray-400">Noches</span>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-gray-500">Noches</span>
                   <span className="text-primary-800 font-medium">{nights}</span>
                 </div>
-                <div className="flex justify-between py-4 bg-sand-50 -mx-8 px-8 rounded-b-lg mt-4">
-                  <span className="text-sm font-semibold text-primary-700 font-sans uppercase tracking-wider">
-                    Total
-                  </span>
-                  <span className="font-serif text-2xl text-primary-900 font-semibold">
+                <div className="border-t border-sand-100 mt-2 pt-3 flex justify-between">
+                  <span className="font-semibold text-primary-900">Total</span>
+                  <span className="font-serif text-xl font-bold text-primary-900">
                     {reservation.currency} {reservation.total_amount}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Cancel action */}
+            {/* Card: Cancelar reserva */}
             {isActive && !deadlineExpired && (
-              <div className="bg-white border border-sand-200 rounded-lg p-6">
+              <div className="bg-white rounded-lg border border-sand-200 shadow-sm p-6">
                 {confirmCancel ? (
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600 font-sans">
