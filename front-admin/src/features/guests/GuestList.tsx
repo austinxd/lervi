@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Chip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -23,8 +23,14 @@ export default function GuestList() {
 
   const { data } = useGetGuestsQuery({ page: page + 1, search: search || undefined });
   const [createGuest, { isLoading: creating }] = useCreateGuestMutation();
-  const { register, handleSubmit, reset, control, watch } = useForm<Partial<Guest>>();
+  const { register, handleSubmit, reset, control, watch, setValue } = useForm<Partial<Guest>>();
   const watchDocType = watch('document_type');
+
+  useEffect(() => {
+    if (watchDocType === 'dni') {
+      setValue('nationality', 'PE');
+    }
+  }, [watchDocType, setValue]);
 
   const handleSearch = (val: string) => {
     clearTimeout(searchTimer.current);
@@ -100,16 +106,14 @@ export default function GuestList() {
               <Grid item xs={6}>
                 <TextField {...register('document_number')} label="Nro. documento" fullWidth />
               </Grid>
-              {watchDocType && watchDocType !== 'dni' && (
-                <Grid item xs={6}>
-                  <Controller name="nationality" control={control} defaultValue="" render={({ field }) => (
-                    <TextField {...field} select label="Nacionalidad" fullWidth>
-                      <MenuItem value="">— Sin especificar —</MenuItem>
-                      {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-                    </TextField>
-                  )} />
-                </Grid>
-              )}
+              <Grid item xs={6}>
+                <Controller name="nationality" control={control} defaultValue="" render={({ field }) => (
+                  <TextField {...field} select label="Nacionalidad" fullWidth>
+                    <MenuItem value="">— Sin especificar —</MenuItem>
+                    {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                  </TextField>
+                )} />
+              </Grid>
               <Grid item xs={6}>
                 <FormControlLabel control={<Switch {...register('is_vip')} />} label="VIP" />
               </Grid>

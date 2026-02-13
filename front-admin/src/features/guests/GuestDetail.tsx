@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
@@ -23,8 +23,14 @@ export default function GuestDetail() {
   const [noteContent, setNoteContent] = useState('');
   const [editing, setEditing] = useState(false);
 
-  const { register, handleSubmit, reset, control, watch } = useForm<Partial<Guest>>();
+  const { register, handleSubmit, reset, control, watch, setValue } = useForm<Partial<Guest>>();
   const watchDocType = watch('document_type');
+
+  useEffect(() => {
+    if (watchDocType === 'dni') {
+      setValue('nationality', 'PE');
+    }
+  }, [watchDocType, setValue]);
 
   const startEdit = () => {
     if (guest) {
@@ -101,26 +107,22 @@ export default function GuestDetail() {
                       )} />
                     </Grid>
                     <Grid item xs={6}><TextField {...register('document_number')} label="Nro. documento" fullWidth /></Grid>
-                    {watchDocType && watchDocType !== 'dni' && (
-                      <>
-                        <Grid item xs={6}>
-                          <Controller name="nationality" control={control} render={({ field }) => (
-                            <TextField {...field} select label="Nacionalidad" fullWidth>
-                              <MenuItem value="">— Sin especificar —</MenuItem>
-                              {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-                            </TextField>
-                          )} />
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Controller name="country_of_residence" control={control} render={({ field }) => (
-                            <TextField {...field} select label="País residencia" fullWidth>
-                              <MenuItem value="">— Sin especificar —</MenuItem>
-                              {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-                            </TextField>
-                          )} />
-                        </Grid>
-                      </>
-                    )}
+                    <Grid item xs={6}>
+                      <Controller name="nationality" control={control} render={({ field }) => (
+                        <TextField {...field} select label="Nacionalidad" fullWidth>
+                          <MenuItem value="">— Sin especificar —</MenuItem>
+                          {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                        </TextField>
+                      )} />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Controller name="country_of_residence" control={control} render={({ field }) => (
+                        <TextField {...field} select label="País residencia" fullWidth>
+                          <MenuItem value="">— Sin especificar —</MenuItem>
+                          {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                        </TextField>
+                      )} />
+                    </Grid>
                   </Grid>
                   <Box display="flex" gap={1} mt={2}>
                     <Button type="submit" variant="contained" size="small">Guardar</Button>
@@ -133,10 +135,8 @@ export default function GuestDetail() {
                     ['Email', guest.email],
                     ['Teléfono', guest.phone],
                     ['Documento', guest.document_number ? `${DOCUMENT_TYPE_LABELS[guest.document_type] || guest.document_type?.toUpperCase() || ''} ${guest.document_number}` : '—'],
-                    ...(guest.document_type && guest.document_type !== 'dni' ? [
-                      ['Nacionalidad', NATIONALITY_OPTIONS.find((o) => o.value === guest.nationality)?.label || guest.nationality],
-                      ['País residencia', NATIONALITY_OPTIONS.find((o) => o.value === guest.country_of_residence)?.label || guest.country_of_residence],
-                    ] : []),
+                    ['Nacionalidad', NATIONALITY_OPTIONS.find((o) => o.value === guest.nationality)?.label || guest.nationality],
+                    ['País residencia', NATIONALITY_OPTIONS.find((o) => o.value === guest.country_of_residence)?.label || guest.country_of_residence],
                   ].map(([label, value]) => (
                     <Grid item xs={6} key={label}>
                       <Typography variant="caption" color="text.secondary">{label}</Typography>
