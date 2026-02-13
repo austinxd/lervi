@@ -2,7 +2,7 @@ from apps.common.state_machine import StateMachine
 
 # --- Operational state machine ---
 OPERATIONAL_TRANSITIONS = {
-    "incomplete": ["pending", "cancelled"],
+    "incomplete": ["pending", "confirmed", "cancelled"],
     "pending": ["confirmed", "cancelled"],
     "confirmed": ["check_in", "cancelled", "no_show"],
     "check_in": ["check_out"],

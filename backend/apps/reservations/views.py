@@ -28,7 +28,7 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     queryset = Reservation.objects.select_related(
         "guest", "property", "room_type", "room",
     )
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     search_fields = ["confirmation_code", "guest__first_name", "guest__last_name"]
     filterset_fields = ["operational_status", "financial_status", "property", "origin_type"]
 
@@ -40,7 +40,7 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         return ReservationDetailSerializer
 
     def get_permissions(self):
-        if self.action in ("create", "partial_update"):
+        if self.action in ("create", "partial_update", "destroy"):
             self.required_role = "reception"
             self.permission_classes = [HasRolePermission]
         return super().get_permissions()
@@ -170,6 +170,39 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         # Automation rules handle: free room if assigned
         dispatch_event("reservation.no_show", reservation.organization, self._build_context(request, reservation))
         return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Upload voucher ----------
+    @action(detail=True, methods=["post"], url_path="upload-voucher")
+    def upload_voucher(self, request, pk=None):
+        reservation = self.get_object()
+        file = request.FILES.get("voucher")
+        if not file:
+            return Response(
+                {"detail": "Debe adjuntar un archivo de comprobante."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reservation.voucher_image = file
+        reservation.save(update_fields=["voucher_image", "updated_at"])
+        # Si esta incomplete, transicionar a pending
+        if reservation.operational_status == "incomplete":
+            try:
+                operational_state_machine.transition(
+                    reservation, "operational_status", "pending", user=request.user,
+                )
+            except DjangoValidationError as e:
+                return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    # ---------- Delete ----------
+    def destroy(self, request, *args, **kwargs):
+        reservation = self.get_object()
+        if reservation.operational_status not in ("incomplete", "cancelled"):
+            return Response(
+                {"detail": "Solo se pueden eliminar reservas incompletas o canceladas."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reservation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ---------- Payments (nested) ----------
     @action(detail=True, methods=["get", "post"], url_path="payments")

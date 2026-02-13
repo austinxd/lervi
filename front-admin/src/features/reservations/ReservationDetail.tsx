@@ -19,6 +19,8 @@ import {
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useSnackbar } from 'notistack';
 import StatusChip from '../../components/StatusChip';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -30,6 +32,8 @@ import {
   useCheckOutReservationMutation,
   useCancelReservationMutation,
   useNoShowReservationMutation,
+  useUploadVoucherMutation,
+  useDeleteReservationMutation,
 } from '../../services/reservationService';
 import { formatDate, formatDateTime, formatCurrency } from '../../utils/formatters';
 import {
@@ -40,7 +44,7 @@ import {
 } from '../../utils/statusLabels';
 import type { Payment } from '../../interfaces/types';
 
-type ActionKey = 'confirm' | 'cancel' | 'check_in' | 'check_out' | 'no_show';
+type ActionKey = 'confirm' | 'cancel' | 'check_in' | 'check_out' | 'no_show' | 'delete';
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -61,6 +65,10 @@ export default function ReservationDetail() {
   const [checkOutReservation] = useCheckOutReservationMutation();
   const [cancelReservation] = useCancelReservationMutation();
   const [noShowReservation] = useNoShowReservationMutation();
+  const [uploadVoucher] = useUploadVoucherMutation();
+  const [deleteReservation] = useDeleteReservationMutation();
+
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -109,6 +117,11 @@ export default function ReservationDetail() {
           await noShowReservation(reservation.id).unwrap();
           enqueueSnackbar('Marcada como no-show', { variant: 'success' });
           break;
+        case 'delete':
+          await deleteReservation(reservation.id).unwrap();
+          enqueueSnackbar('Reservacion eliminada', { variant: 'success' });
+          navigate('/reservations');
+          return;
       }
     } catch (err: unknown) {
       const message =
@@ -130,6 +143,21 @@ export default function ReservationDetail() {
       paymentId: payment.id,
       maxAmount: parseFloat(payment.amount),
     });
+  };
+
+  const handleUploadVoucher = async () => {
+    if (!reservation || !voucherFile) return;
+    try {
+      await uploadVoucher({ reservationId: reservation.id, file: voucherFile }).unwrap();
+      enqueueSnackbar('Comprobante subido exitosamente', { variant: 'success' });
+      setVoucherFile(null);
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'data' in err
+          ? JSON.stringify((err as { data: unknown }).data)
+          : 'Error al subir comprobante';
+      enqueueSnackbar(message, { variant: 'error' });
+    }
   };
 
   if (isLoading) {
@@ -244,7 +272,7 @@ export default function ReservationDetail() {
       </Card>
 
       {/* Actions bar */}
-      {['incomplete', 'pending', 'confirmed', 'check_in'].includes(status) && (
+      {['incomplete', 'pending', 'confirmed', 'check_in', 'cancelled'].includes(status) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -252,19 +280,48 @@ export default function ReservationDetail() {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {status === 'incomplete' && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() =>
-                    openAction(
-                      'cancel',
-                      'Cancelar reservacion',
-                      'Esta seguro de que desea cancelar esta reservacion incompleta?',
-                    )
-                  }
-                >
-                  Cancelar
-                </Button>
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() =>
+                      openAction(
+                        'confirm',
+                        'Confirmar reservacion',
+                        'Esta seguro de que desea confirmar esta reservacion directamente?',
+                      )
+                    }
+                  >
+                    Confirmar
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() =>
+                      openAction(
+                        'cancel',
+                        'Cancelar reservacion',
+                        'Esta seguro de que desea cancelar esta reservacion incompleta?',
+                      )
+                    }
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() =>
+                      openAction(
+                        'delete',
+                        'Eliminar reservacion',
+                        'Esta accion es irreversible. Esta seguro de que desea eliminar esta reservacion?',
+                      )
+                    }
+                  >
+                    Eliminar
+                  </Button>
+                </>
               )}
               {status === 'pending' && (
                 <>
@@ -354,13 +411,29 @@ export default function ReservationDetail() {
                   Check-out
                 </Button>
               )}
+              {status === 'cancelled' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() =>
+                    openAction(
+                      'delete',
+                      'Eliminar reservacion',
+                      'Esta accion es irreversible. Esta seguro de que desea eliminar esta reservacion?',
+                    )
+                  }
+                >
+                  Eliminar
+                </Button>
+              )}
             </Box>
           </CardContent>
         </Card>
       )}
 
       {/* Voucher section */}
-      {(reservation.voucher_image || reservation.payment_deadline) && (
+      {(reservation.voucher_image || reservation.payment_deadline || ['incomplete', 'pending'].includes(status)) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -379,7 +452,7 @@ export default function ReservationDetail() {
                   alt="Voucher de pago"
                   sx={{ maxWidth: 400, maxHeight: 400, objectFit: 'contain', borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 2 }}
                 />
-                {status === 'pending' && (
+                {['pending', 'incomplete'].includes(status) && (
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
                       variant="contained"
@@ -407,6 +480,47 @@ export default function ReservationDetail() {
                     >
                       Rechazar pago
                     </Button>
+                  </Box>
+                )}
+              </Box>
+            ) : ['incomplete', 'pending'].includes(status) ? (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  El huesped aun no ha subido el comprobante. Puede subirlo manualmente.
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUploadIcon />}
+                  >
+                    Seleccionar archivo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => setVoucherFile(e.target.files?.[0] ?? null)}
+                    />
+                  </Button>
+                  {voucherFile && (
+                    <Typography variant="body2" color="text.secondary">
+                      {voucherFile.name}
+                    </Typography>
+                  )}
+                </Box>
+                {voucherFile && (
+                  <Box sx={{ mt: 2 }}>
+                    <Box
+                      component="img"
+                      src={URL.createObjectURL(voucherFile)}
+                      alt="Preview"
+                      sx={{ maxWidth: 300, maxHeight: 300, objectFit: 'contain', borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 2 }}
+                    />
+                    <Box>
+                      <Button variant="contained" onClick={handleUploadVoucher}>
+                        Subir comprobante
+                      </Button>
+                    </Box>
                   </Box>
                 )}
               </Box>

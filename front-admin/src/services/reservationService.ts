@@ -58,6 +58,23 @@ export const reservationApi = createApi({
       }),
       invalidatesTags: (_r, _e, { reservationId }) => [{ type: 'Reservation', id: reservationId }, 'Dashboard'],
     }),
+    uploadVoucher: builder.mutation<ReservationDetail, { reservationId: string; file: File }>({
+      query: ({ reservationId, file }) => {
+        const formData = new FormData();
+        formData.append('voucher', file);
+        return {
+          url: `/reservations/${reservationId}/upload-voucher/`,
+          method: 'POST',
+          data: formData,
+          headers: { 'Content-Type': 'multipart/form-data' },
+        };
+      },
+      invalidatesTags: (_r, _e, { reservationId }) => [{ type: 'Reservation', id: reservationId }, 'Dashboard'],
+    }),
+    deleteReservation: builder.mutation<void, string>({
+      query: (id) => ({ url: `/reservations/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['Reservation', 'Dashboard'],
+    }),
   }),
 });
 
@@ -68,4 +85,5 @@ export const {
   useCheckOutReservationMutation, useCancelReservationMutation,
   useNoShowReservationMutation,
   useAddPaymentMutation, useRefundPaymentMutation,
+  useUploadVoucherMutation, useDeleteReservationMutation,
 } = reservationApi;
