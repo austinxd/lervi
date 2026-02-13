@@ -185,18 +185,18 @@ class Command(BaseCommand):
 
     def _create_guests(self, org):
         guests_data = [
-            ("Juan", "Pérez", "juan.perez@gmail.com", "+51 999 111 001", "DNI", "45678901", "Peruana", False),
-            ("Ana", "Rodríguez", "ana.rodriguez@hotmail.com", "+51 999 111 002", "DNI", "32165498", "Peruana", True),
-            ("Roberto", "Smith", "r.smith@gmail.com", "+1 555 123 4567", "PASSPORT", "US12345678", "Estadounidense", False),
-            ("María", "Fernández", "maria.fernandez@yahoo.com", "+51 999 111 004", "DNI", "78945612", "Peruana", False),
-            ("Carlos", "Tanaka", "c.tanaka@outlook.com", "+81 90 1234 5678", "PASSPORT", "JP98765432", "Japonesa", True),
-            ("Lucía", "García", "lucia.g@gmail.com", "+51 999 111 006", "DNI", "15935748", "Peruana", False),
-            ("Pedro", "Martínez", "pedro.m@gmail.com", "+51 999 111 007", "DNI", "35795148", "Peruana", False),
-            ("Sofía", "Weber", "sofia.weber@web.de", "+49 170 1234567", "PASSPORT", "DE55667788", "Alemana", False),
-            ("Diego", "Torres", "diego.torres@gmail.com", "+54 11 5555 0001", "PASSPORT", "AR11223344", "Argentina", False),
-            ("Valentina", "López", "vale.lopez@gmail.com", "+51 999 111 010", "CE", "CE-20230045", "Colombiana", False),
-            ("Fernando", "Huamán", "f.huaman@outlook.com", "+51 999 111 011", "DNI", "48261537", "Peruana", False),
-            ("Camila", "Ríos", "camila.rios@gmail.com", "+56 9 8765 4321", "PASSPORT", "CL99887766", "Chilena", True),
+            ("Juan", "Pérez", "juan.perez@gmail.com", "+51 999 111 001", "dni", "45678901", "Peruana", False),
+            ("Ana", "Rodríguez", "ana.rodriguez@hotmail.com", "+51 999 111 002", "dni", "32165498", "Peruana", True),
+            ("Roberto", "Smith", "r.smith@gmail.com", "+1 555 123 4567", "passport", "US12345678", "Estadounidense", False),
+            ("María", "Fernández", "maria.fernandez@yahoo.com", "+51 999 111 004", "dni", "78945612", "Peruana", False),
+            ("Carlos", "Tanaka", "c.tanaka@outlook.com", "+81 90 1234 5678", "passport", "JP98765432", "Japonesa", True),
+            ("Lucía", "García", "lucia.g@gmail.com", "+51 999 111 006", "dni", "15935748", "Peruana", False),
+            ("Pedro", "Martínez", "pedro.m@gmail.com", "+51 999 111 007", "dni", "35795148", "Peruana", False),
+            ("Sofía", "Weber", "sofia.weber@web.de", "+49 170 1234567", "passport", "DE55667788", "Alemana", False),
+            ("Diego", "Torres", "diego.torres@gmail.com", "+54 11 5555 0001", "passport", "AR11223344", "Argentina", False),
+            ("Valentina", "López", "vale.lopez@gmail.com", "+51 999 111 010", "ce", "CE-20230045", "Colombiana", False),
+            ("Fernando", "Huamán", "f.huaman@outlook.com", "+51 999 111 011", "dni", "48261537", "Peruana", False),
+            ("Camila", "Ríos", "camila.rios@gmail.com", "+56 9 8765 4321", "passport", "CL99887766", "Chilena", True),
         ]
 
         guests = []

@@ -840,6 +840,7 @@ class GuestLoginView(APIView):
 
 class GuestProfileView(APIView):
     """Datos del huésped autenticado para pre-llenar formularios."""
+    authentication_classes = []
     permission_classes = [IsAuthenticatedGuest]
 
     def get(self, request, org_slug):
@@ -858,6 +859,7 @@ class GuestProfileView(APIView):
 
 class GuestReservationsView(APIView):
     """Lista de reservas de un huésped autenticado (todas las properties de la org)."""
+    authentication_classes = []
     permission_classes = [IsAuthenticatedGuest]
 
     def get(self, request, org_slug):
@@ -888,6 +890,7 @@ class GuestReservationsView(APIView):
 
 class GuestCancelReservationView(APIView):
     """Cancelar una reserva pendiente del huésped."""
+    authentication_classes = []
     permission_classes = [IsAuthenticatedGuest]
 
     def post(self, request, org_slug, confirmation_code):
