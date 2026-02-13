@@ -54,9 +54,19 @@ urlpatterns = [
         name="public-voucher-upload",
     ),
     path(
+        "<slug:org_slug>/guest-register/",
+        views.GuestRegisterView.as_view(),
+        name="public-guest-register",
+    ),
+    path(
         "<slug:org_slug>/guest-login/",
         views.GuestLoginView.as_view(),
         name="public-guest-login",
+    ),
+    path(
+        "<slug:org_slug>/guest-profile/",
+        views.GuestProfileView.as_view(),
+        name="public-guest-profile",
     ),
     path(
         "<slug:org_slug>/mis-reservas/",

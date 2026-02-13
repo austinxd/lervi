@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 
 from apps.common.models import TenantModel
@@ -24,6 +25,7 @@ class Guest(TenantModel):
     document_number = models.CharField(max_length=50, blank=True, default="")
     nationality = models.CharField(max_length=100, blank=True, default="")
     country_of_residence = models.CharField(max_length=100, blank=True, default="")
+    password_hash = models.CharField(max_length=128, blank=True, default="")
     is_vip = models.BooleanField(default=False)
 
     class Meta:
@@ -35,6 +37,16 @@ class Guest(TenantModel):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def set_password(self, raw_password):
+        self.password_hash = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password_hash)
+
+    @property
+    def has_password(self):
+        return bool(self.password_hash)
 
 
 class GuestNote(TenantModel):

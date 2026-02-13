@@ -3,6 +3,8 @@ import type {
   BankAccount,
   GroupReservationConfirmation,
   GroupReservationRequest,
+  GuestProfile,
+  GuestRegisterRequest,
   GuestReservation,
   GuestSession,
   OrganizationInfo,
@@ -132,10 +134,27 @@ export async function lookupReservation(
   return res.json();
 }
 
+export async function guestRegister(
+  slug: string,
+  data: GuestRegisterRequest
+): Promise<GuestSession> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest-register/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al registrarse");
+  }
+  return res.json();
+}
+
 export async function guestLogin(
   slug: string,
   documentType: string,
-  documentNumber: string
+  documentNumber: string,
+  password: string
 ): Promise<GuestSession> {
   const res = await fetch(`${PUBLIC_API}/${slug}/guest-login/`, {
     method: "POST",
@@ -143,12 +162,24 @@ export async function guestLogin(
     body: JSON.stringify({
       document_type: documentType,
       document_number: documentNumber,
+      password,
     }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.detail || "Error al iniciar sesión");
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al iniciar sesión");
   }
+  return res.json();
+}
+
+export async function getGuestProfile(
+  slug: string,
+  token: string
+): Promise<GuestProfile> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest-profile/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Error al obtener perfil");
   return res.json();
 }
 

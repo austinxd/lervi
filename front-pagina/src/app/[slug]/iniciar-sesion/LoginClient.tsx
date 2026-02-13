@@ -21,6 +21,7 @@ export default function LoginClient({ slug }: Props) {
   const router = useRouter();
   const [documentType, setDocumentType] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,7 +30,7 @@ export default function LoginClient({ slug }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      const session = await guestLogin(slug, documentType, documentNumber);
+      const session = await guestLogin(slug, documentType, documentNumber, password);
       setGuestSession(session);
       router.push(`/${slug}/mis-reservas`);
     } catch (err) {
@@ -91,6 +92,18 @@ export default function LoginClient({ slug }: Props) {
                 />
               </div>
 
+              <div>
+                <label className="label-field">Contraseña</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••"
+                  className="input-field"
+                />
+              </div>
+
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
                   {error}
@@ -99,7 +112,7 @@ export default function LoginClient({ slug }: Props) {
 
               <button
                 type="submit"
-                disabled={submitting || !documentType || !documentNumber}
+                disabled={submitting || !documentType || !documentNumber || !password}
                 className="btn-primary w-full"
               >
                 {submitting ? (
@@ -132,7 +145,10 @@ export default function LoginClient({ slug }: Props) {
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              Use el mismo documento con el que realizó su reserva.
+              ¿No tiene cuenta?{" "}
+              <Link href={`/${slug}/disponibilidad`} className="text-accent-600 hover:text-accent-700 font-medium">
+                Reserve y cree su cuenta
+              </Link>
             </p>
           </div>
 

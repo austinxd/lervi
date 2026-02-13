@@ -217,6 +217,27 @@ export interface GuestSession {
   guest_id: string;
 }
 
+export interface GuestRegisterRequest {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  document_type: string;
+  document_number: string;
+  nationality?: string;
+  password: string;
+}
+
+export interface GuestProfile {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  document_type: string;
+  document_number: string;
+  nationality: string;
+}
+
 export interface GuestReservation {
   confirmation_code: string;
   room_type: string;

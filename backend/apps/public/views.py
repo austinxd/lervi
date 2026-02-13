@@ -26,6 +26,8 @@ from .serializers import (
     CombinationResultSerializer,
     GroupReservationConfirmationSerializer,
     GuestLoginSerializer,
+    GuestProfileSerializer,
+    GuestRegisterSerializer,
     GuestReservationListSerializer,
     OrganizationInfoSerializer,
     PublicBankAccountSerializer,
@@ -672,8 +674,60 @@ class VoucherUploadView(APIView):
         )
 
 
+def _generate_guest_token(guest):
+    """Generate a JWT token for an authenticated guest."""
+    payload = {
+        "guest_id": str(guest.id),
+        "organization_id": str(guest.organization_id),
+        "guest_name": guest.full_name,
+        "exp": timezone.now() + timedelta(hours=24),
+        "iat": timezone.now(),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+
+class GuestRegisterView(APIView):
+    """Registro de huésped con contraseña."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = GuestRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if Guest.objects.filter(
+            organization=org,
+            document_type=data["document_type"],
+            document_number=data["document_number"],
+        ).exists():
+            return Response(
+                {"detail": "Ya existe una cuenta con este documento. Inicie sesión."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        guest = Guest.objects.create(
+            organization=org,
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=data["email"],
+            phone=data.get("phone", ""),
+            document_type=data["document_type"],
+            document_number=data["document_number"],
+            nationality=data.get("nationality", ""),
+        )
+        guest.set_password(data["password"])
+        guest.save(update_fields=["password_hash"])
+
+        return Response({
+            "access": _generate_guest_token(guest),
+            "guest_name": guest.full_name,
+            "guest_id": str(guest.id),
+        }, status=status.HTTP_201_CREATED)
+
+
 class GuestLoginView(APIView):
-    """Login de huésped con tipo y número de documento."""
+    """Login de huésped con documento y contraseña."""
     permission_classes = [AllowAny]
 
     def post(self, request, org_slug):
@@ -694,20 +748,41 @@ class GuestLoginView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        payload = {
-            "guest_id": str(guest.id),
-            "organization_id": str(guest.organization_id),
-            "guest_name": guest.full_name,
-            "exp": timezone.now() + timedelta(hours=24),
-            "iat": timezone.now(),
-        }
-        token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+        if not guest.has_password:
+            return Response(
+                {"detail": "Esta cuenta no tiene contraseña. Regístrese primero."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not guest.check_password(data["password"]):
+            return Response(
+                {"detail": "Contraseña incorrecta."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         return Response({
-            "access": token,
+            "access": _generate_guest_token(guest),
             "guest_name": guest.full_name,
             "guest_id": str(guest.id),
         })
+
+
+class GuestProfileView(APIView):
+    """Datos del huésped autenticado para pre-llenar formularios."""
+    permission_classes = [IsAuthenticatedGuest]
+
+    def get(self, request, org_slug):
+        guest = request.guest
+        serializer = GuestProfileSerializer({
+            "first_name": guest.first_name,
+            "last_name": guest.last_name,
+            "email": guest.email,
+            "phone": guest.phone,
+            "document_type": guest.document_type,
+            "document_number": guest.document_number,
+            "nationality": guest.nationality,
+        })
+        return Response(serializer.data)
 
 
 class GuestReservationsView(APIView):
