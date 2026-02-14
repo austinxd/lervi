@@ -27,11 +27,15 @@ export const guestApi = createApi({
       query: ({ guestId, content }) => ({ url: `/guests/${guestId}/notes/`, method: 'POST', data: { content } }),
       invalidatesTags: (_r, _e, { guestId }) => [{ type: 'Guest', id: guestId }],
     }),
+    deleteGuest: builder.mutation<void, string>({
+      query: (id) => ({ url: `/guests/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['Guest'],
+    }),
   }),
 });
 
 export const {
   useGetGuestsQuery, useGetGuestQuery,
   useCreateGuestMutation, useUpdateGuestMutation,
-  useAddGuestNoteMutation,
+  useAddGuestNoteMutation, useDeleteGuestMutation,
 } = guestApi;

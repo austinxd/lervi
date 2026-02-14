@@ -5,11 +5,13 @@ import {
   Divider, Grid, IconButton, MenuItem, TextField, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { DOCUMENT_TYPE_OPTIONS, DOCUMENT_TYPE_LABELS, NATIONALITY_OPTIONS } from '../../utils/statusLabels';
-import { useGetGuestQuery, useUpdateGuestMutation, useAddGuestNoteMutation } from '../../services/guestService';
+import { useGetGuestQuery, useUpdateGuestMutation, useAddGuestNoteMutation, useDeleteGuestMutation } from '../../services/guestService';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { formatDateTime } from '../../utils/formatters';
 import type { Guest } from '../../interfaces/types';
 
@@ -20,8 +22,10 @@ export default function GuestDetail() {
   const { data: guest, isLoading, error } = useGetGuestQuery(id!);
   const [updateGuest] = useUpdateGuestMutation();
   const [addNote] = useAddGuestNoteMutation();
+  const [deleteGuest] = useDeleteGuestMutation();
   const [noteContent, setNoteContent] = useState('');
   const [editing, setEditing] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { register, handleSubmit, reset, control, watch, setValue } = useForm<Partial<Guest>>();
   const watchDocType = watch('document_type');
@@ -70,17 +74,38 @@ export default function GuestDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteGuest(id!).unwrap();
+      enqueueSnackbar('Huésped eliminado', { variant: 'success' });
+      navigate('/guests');
+    } catch {
+      enqueueSnackbar('Error al eliminar', { variant: 'error' });
+    }
+  };
+
   if (isLoading) return <CircularProgress />;
   if (error || !guest) return <Alert severity="error">Error al cargar huésped</Alert>;
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" gap={1} mb={2}>
-        <IconButton onClick={() => navigate('/guests')}><ArrowBackIcon /></IconButton>
-        <Typography variant="h5">
-          {guest.first_name} {guest.last_name}
-          {guest.is_vip && <Chip label="VIP" size="small" color="secondary" sx={{ ml: 1 }} />}
-        </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={() => navigate('/guests')}><ArrowBackIcon /></IconButton>
+          <Typography variant="h5">
+            {guest.first_name} {guest.last_name}
+            {guest.is_vip && <Chip label="VIP" size="small" color="secondary" sx={{ ml: 1 }} />}
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteIcon />}
+          onClick={() => setDeleteOpen(true)}
+          size="small"
+        >
+          Eliminar
+        </Button>
       </Box>
 
       <Grid container spacing={3}>
@@ -184,6 +209,13 @@ export default function GuestDetail() {
           </Card>
         </Grid>
       </Grid>
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Eliminar huésped"
+        message={`¿Está seguro de eliminar a ${guest.first_name} ${guest.last_name}? Esta acción no se puede deshacer.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </Box>
   );
 }
