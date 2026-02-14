@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getOrganizationInfo, getRoomTypeDetail } from "@/lib/api";
 import { VIEW_TYPE_LABELS, BATHROOM_TYPE_LABELS } from "@/lib/constants";
 import PhotoGallery from "./PhotoGallery";
+import RoomViewTracker from "@/components/RoomViewTracker";
 
 interface Props {
   params: Promise<{ slug: string; id: string }>;
@@ -47,6 +48,7 @@ export default async function RoomTypeDetailPage({ params }: Props) {
 
   return (
     <div>
+      <RoomViewTracker roomId={id} roomName={roomType.name} />
       {/* Page Header */}
       <div className="bg-primary-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

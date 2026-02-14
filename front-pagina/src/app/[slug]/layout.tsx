@@ -5,6 +5,7 @@ import { resolveThemeVariables, resolveTemplateKey } from "@/lib/theme-resolver"
 import { TEMPLATES } from "@/lib/themes";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import EventInit from "@/components/EventInit";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -55,6 +56,7 @@ export default async function HotelLayout({ params, children }: Props) {
       className="min-h-screen flex flex-col bg-sand-50"
     >
       <link href={template.googleFontsUrl} rel="stylesheet" />
+      <EventInit slug={slug} />
       <Header propertyName={org.name} logo={org.logo} template={templateKey} slug={slug} />
       <main className="flex-1">{children}</main>
       <Footer org={org} />

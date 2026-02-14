@@ -9,6 +9,7 @@ import {
   getGuestProfile,
 } from "@/lib/api";
 import { getGuestToken, getGuestName } from "@/lib/guest-auth";
+import { track, EVENT_NAMES } from "@/lib/events";
 import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
 import PriceBreakdown from "@/components/PriceBreakdown";
 import type {
@@ -105,6 +106,8 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
         router.replace(`/iniciar-sesion?next=${encodeURIComponent(currentUrl)}`);
       });
 
+    track(EVENT_NAMES.START_BOOKING, { room_type_id: roomTypeId, check_in: checkIn, check_out: checkOut });
+
     // Fetch availability
     if (roomTypeId && checkIn && checkOut) {
       searchAvailability(slug, checkIn, checkOut, adults, children)
@@ -117,6 +120,17 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
       setLoading(false);
     }
   }, [slug, roomTypeId, checkIn, checkOut, adults, children]);
+
+  // Track booking abandoned on page leave (if not confirmed)
+  useEffect(() => {
+    const handleLeave = () => {
+      if (!confirmation) {
+        track(EVENT_NAMES.BOOKING_ABANDONED, { room_type_id: roomTypeId });
+      }
+    };
+    window.addEventListener("beforeunload", handleLeave);
+    return () => window.removeEventListener("beforeunload", handleLeave);
+  }, [confirmation, roomTypeId]);
 
   const prefillFromProfile = (profile: GuestProfile) => {
     setFirstName(profile.first_name);
@@ -158,6 +172,7 @@ export default function BookingClient({ slug, defaultCountry = "PE" }: Props) {
         children,
         special_requests: specialRequests,
       });
+      track(EVENT_NAMES.BOOKING_CONFIRMED, { confirmation_code: result.confirmation_code, total: result.total_amount });
       if (result.has_bank_accounts) {
         router.push(`/mis-reservas/${result.confirmation_code}`);
         return;

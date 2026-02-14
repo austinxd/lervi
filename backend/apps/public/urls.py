@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from apps.events.views import EventIngestView
 
 urlpatterns = [
     path(
@@ -117,5 +118,10 @@ urlpatterns = [
         "<slug:org_slug>/reservations/<str:confirmation_code>/cancel/",
         views.GuestCancelReservationView.as_view(),
         name="public-guest-cancel-reservation",
+    ),
+    path(
+        "<slug:org_slug>/events/",
+        EventIngestView.as_view(),
+        name="public-events",
     ),
 ]

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { searchAvailability } from "@/lib/api";
+import { track, EVENT_NAMES } from "@/lib/events";
 import PriceBreakdown from "@/components/PriceBreakdown";
 import type { AvailabilityResult, CombinationResult } from "@/lib/types";
 
@@ -30,6 +31,7 @@ export default function AvailabilityClient({ slug }: Props) {
     setLoading(true);
     setError("");
     try {
+      track(EVENT_NAMES.SEARCH_DATES, { check_in: checkIn, check_out: checkOut, adults, children });
       const data = await searchAvailability(
         slug,
         checkIn,

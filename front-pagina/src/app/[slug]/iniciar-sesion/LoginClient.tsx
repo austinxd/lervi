@@ -13,6 +13,7 @@ import {
   guestIdentityData,
 } from "@/lib/api";
 import { setGuestSession } from "@/lib/guest-auth";
+import { track, setGuestId, EVENT_NAMES } from "@/lib/events";
 import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
 import type { GuestLookupResponse } from "@/lib/types";
 
@@ -99,7 +100,9 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     setInfo(null);
     setSubmitting(true);
     try {
+      track(EVENT_NAMES.GUEST_LOOKUP_STARTED, { document_type: docType });
       const result: GuestLookupResponse = await guestLookup(slug, docType, docNumber);
+      track(EVENT_NAMES.GUEST_LOOKUP_RESULT, { status: result.status });
       switch (result.status) {
         case "login":
           setStep("login");
@@ -140,6 +143,8 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     try {
       const session = await guestLogin(slug, docType, docNumber, password);
       setGuestSession(session);
+      setGuestId(session.guest_id);
+      track(EVENT_NAMES.GUEST_LOGIN_SUCCESS);
       router.push(nextUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesion");
@@ -165,6 +170,8 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
         password: regPassword,
       });
       setGuestSession(session);
+      setGuestId(session.guest_id);
+      track(EVENT_NAMES.GUEST_LOGIN_SUCCESS, { method: "register" });
       if (session.is_verified === false) {
         setStep("verify-email");
         setInfo("Hemos enviado un codigo de verificacion a " + email);
@@ -199,6 +206,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     setSubmitting(true);
     try {
       await guestRequestOtp(slug, docType, docNumber);
+      track(EVENT_NAMES.OTP_REQUESTED);
       setOtpSent(true);
       setInfo("Codigo enviado a su email.");
     } catch (err) {
@@ -227,7 +235,9 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
         phone: fullPhone,
         nationality: actNationality,
       });
+      track(EVENT_NAMES.OTP_VERIFIED);
       setGuestSession(session);
+      setGuestId(session.guest_id);
       router.push(nextUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al activar cuenta");
