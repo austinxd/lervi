@@ -80,7 +80,7 @@ def get_guest_for_identity(identity: GlobalIdentity, organization):
     return link.guest if link else None
 
 
-def request_otp(identity: GlobalIdentity) -> dict:
+def request_otp(identity: GlobalIdentity, organization_name: str = "") -> dict:
     """
     Generate and send an OTP to the identity's email.
     Returns {"ok": True} or {"error": "...", "retry_after": seconds}.
@@ -126,7 +126,7 @@ def request_otp(identity: GlobalIdentity) -> dict:
         email = decrypt_value(identity.encrypted_email)
 
     if email:
-        send_otp_email(email, code)
+        send_otp_email(email, code, from_name=organization_name)
 
     return {"ok": True}
 

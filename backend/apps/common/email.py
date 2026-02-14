@@ -5,15 +5,19 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def send_otp_email(to_email: str, code: str):
+def send_otp_email(to_email: str, code: str, from_name: str = ""):
     """Send an OTP verification email using Resend."""
     try:
         import resend
 
         resend.api_key = settings.RESEND_API_KEY
 
+        from_address = settings.RESEND_FROM_EMAIL
+        if from_name:
+            from_address = f"{from_name} <{from_address}>"
+
         resend.Emails.send({
-            "from": settings.RESEND_FROM_EMAIL,
+            "from": from_address,
             "to": [to_email],
             "subject": "Tu codigo de verificacion",
             "html": (

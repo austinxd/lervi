@@ -908,7 +908,7 @@ class GuestRequestOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, org_slug):
-        get_organization(org_slug)  # validate org exists
+        org = get_organization(org_slug)
         serializer = GuestRequestOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -922,7 +922,7 @@ class GuestRequestOTPView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        result = request_otp(identity)
+        result = request_otp(identity, organization_name=org.name)
         if "error" in result:
             return Response(
                 {"detail": result["error"], "retry_after": result.get("retry_after")},
