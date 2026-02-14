@@ -173,6 +173,28 @@ export async function guestLogin(
   return res.json();
 }
 
+export async function guestVerifyEmail(
+  slug: string,
+  documentType: string,
+  documentNumber: string,
+  code: string
+): Promise<{ detail: string; is_verified: boolean }> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest/verify-email/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      document_type: documentType,
+      document_number: documentNumber,
+      code,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al verificar email");
+  }
+  return res.json();
+}
+
 export async function guestLookup(
   slug: string,
   documentType: string,

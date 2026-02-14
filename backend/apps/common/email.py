@@ -39,8 +39,8 @@ def send_otp_email(to_email: str, code: str, from_name: str = ""):
         logger.exception("Failed to send OTP email to %s", to_email)
 
 
-def send_welcome_email(to_email: str, guest_name: str, from_name: str = ""):
-    """Send a welcome email after guest registration."""
+def send_welcome_email(to_email: str, guest_name: str, code: str, from_name: str = ""):
+    """Send a welcome email with verification code after guest registration."""
     try:
         import resend
 
@@ -53,13 +53,18 @@ def send_welcome_email(to_email: str, guest_name: str, from_name: str = ""):
         resend.Emails.send({
             "from": from_address,
             "to": [to_email],
-            "subject": f"Bienvenido a {from_name}" if from_name else "Bienvenido",
+            "subject": f"Bienvenido a {from_name} — Verifica tu email" if from_name else "Bienvenido — Verifica tu email",
             "html": (
                 f"<div style='font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>"
                 f"<h2 style='color: #1a1a2e;'>Bienvenido, {guest_name}!</h2>"
-                f"<p>Tu cuenta ha sido creada exitosamente.</p>"
-                f"<p>Ahora puedes iniciar sesion con tu documento y contraseña "
-                f"para gestionar tus reservas.</p>"
+                f"<p>Tu cuenta ha sido creada exitosamente. Para completar tu registro, "
+                f"verifica tu email con el siguiente codigo:</p>"
+                f"<div style='background: #f5f5f5; padding: 20px; text-align: center; "
+                f"border-radius: 8px; margin: 20px 0;'>"
+                f"<span style='font-size: 32px; font-weight: bold; letter-spacing: 6px; "
+                f"color: #1a1a2e;'>{code}</span>"
+                f"</div>"
+                f"<p style='color: #666; font-size: 14px;'>Este codigo expira en 10 minutos.</p>"
                 f"<p style='color: #999; font-size: 12px;'>Si no creaste esta cuenta, "
                 f"puedes ignorar este mensaje.</p>"
                 f"</div>"

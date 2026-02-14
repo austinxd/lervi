@@ -9,6 +9,7 @@ import {
   guestLookup,
   guestRequestOtp,
   guestActivate,
+  guestVerifyEmail,
 } from "@/lib/api";
 import { setGuestSession } from "@/lib/guest-auth";
 import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
@@ -50,7 +51,7 @@ const NATIONALITIES = [
   { value: "OTHER", label: "Otra" },
 ];
 
-type Step = "lookup" | "login" | "register" | "otp" | "activate";
+type Step = "lookup" | "login" | "register" | "verify-email" | "otp" | "activate";
 
 export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const router = useRouter();
@@ -77,6 +78,9 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const [phone, setPhone] = useState("");
   const [nationality, setNationality] = useState("");
   const [regPassword, setRegPassword] = useState("");
+
+  // Email verification
+  const [verifyCode, setVerifyCode] = useState("");
 
   // OTP / Activate fields
   const [otpCode, setOtpCode] = useState("");
@@ -150,9 +154,30 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
         password: regPassword,
       });
       setGuestSession(session);
-      router.push(nextUrl);
+      if (session.is_verified === false) {
+        setStep("verify-email");
+        setInfo("Hemos enviado un codigo de verificacion a " + email);
+        setError(null);
+      } else {
+        router.push(nextUrl);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al registrarse");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await guestVerifyEmail(slug, docType, docNumber, verifyCode);
+      setInfo(null);
+      router.push(nextUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al verificar email");
     } finally {
       setSubmitting(false);
     }
@@ -208,6 +233,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     lookup: "Acceder a mi cuenta",
     login: "Iniciar Sesion",
     register: "Crear Cuenta",
+    "verify-email": "Verificar Email",
     otp: "Verificar Identidad",
     activate: "Completar Registro",
   };
@@ -216,6 +242,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     lookup: "Ingrese su documento para continuar",
     login: "Ingrese su contraseña",
     register: "Complete sus datos para crear su cuenta",
+    "verify-email": "Ingrese el codigo enviado a su email",
     otp: "Solicite y verifique el codigo enviado a su email",
     activate: "Complete sus datos para activar su cuenta",
   };
@@ -414,6 +441,43 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                   className="w-full text-sm text-gray-500 hover:text-gray-700"
                 >
                   Usar otro documento
+                </button>
+              </form>
+            )}
+
+            {/* STEP: VERIFY EMAIL (after registration) */}
+            {step === "verify-email" && (
+              <form onSubmit={handleVerifyEmail} className="space-y-5">
+                <div>
+                  <label className="label-field">Codigo de verificacion</label>
+                  <input
+                    type="text"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="input-field text-center text-2xl tracking-[0.3em]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting || verifyCode.length !== 6}
+                  className="btn-primary w-full disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      {spinner} Verificando...
+                    </span>
+                  ) : "Verificar email"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push(nextUrl)}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Verificar despues
                 </button>
               </form>
             )}

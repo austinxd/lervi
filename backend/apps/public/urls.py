@@ -64,6 +64,11 @@ urlpatterns = [
         name="public-guest-login",
     ),
     path(
+        "<slug:org_slug>/guest/verify-email/",
+        views.GuestVerifyEmailView.as_view(),
+        name="public-guest-verify-email",
+    ),
+    path(
         "<slug:org_slug>/guest/lookup/",
         views.GuestLookupView.as_view(),
         name="public-guest-lookup",

@@ -39,6 +39,7 @@ from .serializers import (
     GuestActivateSerializer,
     GuestLoginSerializer,
     GuestLookupSerializer,
+    GuestVerifyEmailSerializer,
     GuestProfileSerializer,
     GuestRegisterSerializer,
     GuestRequestOTPSerializer,
@@ -766,7 +767,7 @@ class GuestRegisterView(APIView):
             existing_by_doc.phone = data.get("phone", "")
             existing_by_doc.nationality = data.get("nationality", "")
             existing_by_doc.set_password(data["password"])
-            existing_by_doc.is_verified = True
+            existing_by_doc.is_verified = False
             existing_by_doc.last_login = timezone.now()
             existing_by_doc.save()
             guest = existing_by_doc
@@ -787,7 +788,7 @@ class GuestRegisterView(APIView):
                 existing_by_email.document_number = doc_number
                 existing_by_email.nationality = data.get("nationality", "")
                 existing_by_email.set_password(data["password"])
-                existing_by_email.is_verified = True
+                existing_by_email.is_verified = False
                 existing_by_email.last_login = timezone.now()
                 existing_by_email.save()
                 guest = existing_by_email
@@ -807,7 +808,7 @@ class GuestRegisterView(APIView):
                     document_type=data["document_type"],
                     document_number=doc_number,
                     nationality=data.get("nationality", ""),
-                    is_verified=True,
+                    is_verified=False,
                     last_login=timezone.now(),
                 )
                 guest.set_password(data["password"])
@@ -822,15 +823,25 @@ class GuestRegisterView(APIView):
         )
         create_identity_link(identity, org, guest)
 
-        # Send welcome email
+        # Send welcome email with verification code
         from apps.common.email import send_welcome_email
+        from apps.identity.utils import generate_otp_code
+        from apps.identity.models import OTPCode
         if data["email"]:
-            send_welcome_email(data["email"], guest.full_name, from_name=org.name)
+            code = generate_otp_code()
+            otp_lifetime = getattr(settings, "OTP_LIFETIME_MINUTES", 10)
+            OTPCode.objects.create(
+                identity=identity,
+                code=code,
+                expires_at=timezone.now() + timedelta(minutes=otp_lifetime),
+            )
+            send_welcome_email(data["email"], guest.full_name, code, from_name=org.name)
 
         return Response({
             "access": _generate_guest_token(guest),
             "guest_name": guest.full_name,
             "guest_id": str(guest.id),
+            "is_verified": guest.is_verified,
         }, status=status.HTTP_201_CREATED)
 
 
@@ -877,6 +888,53 @@ class GuestLoginView(APIView):
             "access": _generate_guest_token(guest),
             "guest_name": guest.full_name,
             "guest_id": str(guest.id),
+        })
+
+
+class GuestVerifyEmailView(APIView):
+    """Verify guest email with OTP code sent during registration."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = GuestVerifyEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        doc_number = normalize_document(data["document_number"])
+        identity, exists = lookup_identity(data["document_type"], doc_number)
+
+        if not exists:
+            return Response(
+                {"detail": "Identidad no encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not verify_otp(identity, data["code"]):
+            return Response(
+                {"detail": "Codigo invalido o expirado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Mark guest as verified
+        guest = Guest.objects.filter(
+            organization=org,
+            document_type=data["document_type"],
+            document_number=doc_number,
+        ).first()
+
+        if not guest:
+            return Response(
+                {"detail": "Huesped no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        guest.is_verified = True
+        guest.save(update_fields=["is_verified"])
+
+        return Response({
+            "detail": "Email verificado exitosamente.",
+            "is_verified": True,
         })
 
 

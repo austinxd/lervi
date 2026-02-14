@@ -215,6 +215,7 @@ export interface GuestSession {
   access: string;
   guest_name: string;
   guest_id: string;
+  is_verified?: boolean;
 }
 
 export interface GuestLookupResponse {

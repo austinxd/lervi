@@ -233,6 +233,12 @@ class GuestActivateSerializer(serializers.Serializer):
     nationality = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
 
 
+class GuestVerifyEmailSerializer(serializers.Serializer):
+    document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
+    document_number = serializers.CharField(max_length=50)
+    code = serializers.CharField(max_length=6)
+
+
 class GuestRegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
