@@ -46,7 +46,6 @@ export default function GuestDetail() {
         document_type: guest.document_type,
         document_number: guest.document_number,
         nationality: guest.nationality,
-        country_of_residence: guest.country_of_residence,
         is_vip: guest.is_vip,
       });
       setEditing(true);
@@ -140,14 +139,6 @@ export default function GuestDetail() {
                         </TextField>
                       )} />
                     </Grid>
-                    <Grid item xs={6}>
-                      <Controller name="country_of_residence" control={control} render={({ field }) => (
-                        <TextField {...field} select label="País residencia" fullWidth>
-                          <MenuItem value="">— Sin especificar —</MenuItem>
-                          {NATIONALITY_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-                        </TextField>
-                      )} />
-                    </Grid>
                   </Grid>
                   <Box display="flex" gap={1} mt={2}>
                     <Button type="submit" variant="contained" size="small">Guardar</Button>
@@ -161,7 +152,7 @@ export default function GuestDetail() {
                     ['Teléfono', guest.phone],
                     ['Documento', guest.document_number ? `${DOCUMENT_TYPE_LABELS[guest.document_type] || guest.document_type?.toUpperCase() || ''} ${guest.document_number}` : '—'],
                     ['Nacionalidad', NATIONALITY_OPTIONS.find((o) => o.value === guest.nationality)?.label || guest.nationality],
-                    ['País residencia', NATIONALITY_OPTIONS.find((o) => o.value === guest.country_of_residence)?.label || guest.country_of_residence],
+                    ['Registrado', guest.created_at ? formatDateTime(guest.created_at) : '—'],
                   ].map(([label, value]) => (
                     <Grid item xs={6} key={label}>
                       <Typography variant="caption" color="text.secondary">{label}</Typography>
