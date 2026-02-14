@@ -32,7 +32,7 @@ from apps.identity.services import (
     request_otp,
     verify_otp,
 )
-from apps.identity.utils import normalize_document
+from apps.identity.utils import encrypt_value, normalize_document
 
 from .serializers import (
     AvailabilityResultSerializer,
@@ -1005,10 +1005,35 @@ class GuestRequestOTPView(APIView):
         identity, exists = lookup_identity(data["document_type"], doc_number)
 
         if not exists:
-            return Response(
-                {"detail": "Identidad no encontrada. Registrese primero."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            # Check if guest exists locally — create identity with their email
+            guest = Guest.objects.filter(
+                organization=org,
+                document_type=data["document_type"],
+                document_number=doc_number,
+            ).first()
+            if guest and guest.email:
+                identity = get_or_create_identity(
+                    document_type=data["document_type"],
+                    document_number=doc_number,
+                    email=guest.email,
+                    full_name=guest.full_name,
+                )
+            else:
+                return Response(
+                    {"detail": "Identidad no encontrada. Registrese primero."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # If identity exists but has no email, try to fill it from local guest
+        if not identity.encrypted_email:
+            guest = Guest.objects.filter(
+                organization=org,
+                document_type=data["document_type"],
+                document_number=doc_number,
+            ).first()
+            if guest and guest.email:
+                identity.encrypted_email = encrypt_value(guest.email)
+                identity.save(update_fields=["encrypted_email"])
 
         result = request_otp(identity, organization_name=org.name)
         if "error" in result:
