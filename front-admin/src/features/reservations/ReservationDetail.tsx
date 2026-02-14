@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Divider,
   Grid,
@@ -81,9 +82,10 @@ export default function ReservationDetail() {
   // Payment dialog state
   const [paymentDialog, setPaymentDialog] = useState<{
     open: boolean;
-    mode: 'payment' | 'refund';
+    mode: 'payment' | 'refund' | 'confirm';
     paymentId?: string;
     maxAmount?: number;
+    defaultAmount?: string;
   }>({ open: false, mode: 'payment' });
 
   const openAction = (action: ActionKey, title: string, message: string) => {
@@ -142,6 +144,15 @@ export default function ReservationDetail() {
       mode: 'refund',
       paymentId: payment.id,
       maxAmount: parseFloat(payment.amount),
+    });
+  };
+
+  const openConfirmPaymentDialog = (payment: Payment) => {
+    setPaymentDialog({
+      open: true,
+      mode: 'confirm',
+      paymentId: payment.id,
+      defaultAmount: payment.amount,
     });
   };
 
@@ -542,6 +553,35 @@ export default function ReservationDetail() {
               Agregar pago
             </Button>
           </Box>
+
+          {/* Balance summary */}
+          {(() => {
+            const totalPaid = reservation.payments
+              .filter((p) => p.status === 'completed')
+              .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            const totalPending = reservation.payments
+              .filter((p) => p.status === 'pending')
+              .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            const total = parseFloat(reservation.total_amount);
+            const remaining = total - totalPaid;
+            const currency = reservation.currency;
+
+            return (
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                <Chip label={`Total: ${formatCurrency(total.toString(), currency)}`} variant="outlined" />
+                <Chip label={`Pagado: ${formatCurrency(totalPaid.toString(), currency)}`} color="success" variant="outlined" />
+                {totalPending > 0 && (
+                  <Chip label={`Pendiente: ${formatCurrency(totalPending.toString(), currency)}`} color="warning" variant="outlined" />
+                )}
+                <Chip
+                  label={`Por pagar: ${formatCurrency(remaining > 0 ? remaining.toString() : '0', currency)}`}
+                  color={remaining > 0 ? 'error' : 'default'}
+                  variant="outlined"
+                />
+              </Box>
+            );
+          })()}
+
           <Divider sx={{ mb: 2 }} />
           <TableContainer>
             <Table size="small">
@@ -570,6 +610,15 @@ export default function ReservationDetail() {
                     <TableCell>{formatDateTime(payment.processed_at)}</TableCell>
                     <TableCell>{payment.notes || '---'}</TableCell>
                     <TableCell align="right">
+                      {payment.status === 'pending' && (
+                        <Button
+                          size="small"
+                          color="success"
+                          onClick={() => openConfirmPaymentDialog(payment)}
+                        >
+                          Confirmar
+                        </Button>
+                      )}
                       {payment.status === 'completed' && (
                         <Button
                           size="small"
@@ -612,6 +661,7 @@ export default function ReservationDetail() {
         mode={paymentDialog.mode}
         paymentId={paymentDialog.paymentId}
         maxAmount={paymentDialog.maxAmount}
+        defaultAmount={paymentDialog.defaultAmount}
       />
     </Box>
   );

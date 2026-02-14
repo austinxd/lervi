@@ -6,34 +6,33 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
+  Switch,
   TextField,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
-import { useAddPaymentMutation, useRefundPaymentMutation } from '../../services/reservationService';
+import { useAddPaymentMutation, useConfirmPaymentMutation, useRefundPaymentMutation } from '../../services/reservationService';
 import { PAYMENT_METHOD_LABELS } from '../../utils/statusLabels';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   reservationId: string;
-  mode: 'payment' | 'refund';
+  mode: 'payment' | 'refund' | 'confirm';
   paymentId?: string;
   maxAmount?: number;
+  defaultAmount?: string;
 }
 
-interface PaymentFormValues {
+interface FormValues {
   amount: string;
   method: string;
   notes: string;
-}
-
-interface RefundFormValues {
-  amount: string;
-  notes: string;
+  isPending: boolean;
 }
 
 export default function PaymentDialog({
@@ -43,13 +42,16 @@ export default function PaymentDialog({
   mode,
   paymentId,
   maxAmount,
+  defaultAmount,
 }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const [addPayment, { isLoading: isAdding }] = useAddPaymentMutation();
+  const [confirmPayment, { isLoading: isConfirming }] = useConfirmPaymentMutation();
   const [refundPayment, { isLoading: isRefunding }] = useRefundPaymentMutation();
 
   const isPayment = mode === 'payment';
-  const isLoading = isAdding || isRefunding;
+  const isConfirm = mode === 'confirm';
+  const isLoading = isAdding || isConfirming || isRefunding;
 
   const {
     register,
@@ -57,21 +59,27 @@ export default function PaymentDialog({
     control,
     reset,
     formState: { errors },
-  } = useForm<PaymentFormValues & RefundFormValues>({
+  } = useForm<FormValues>({
     defaultValues: {
       amount: '',
       method: 'cash',
       notes: '',
+      isPending: false,
     },
   });
 
   useEffect(() => {
     if (open) {
-      reset({ amount: '', method: 'cash', notes: '' });
+      reset({
+        amount: isConfirm && defaultAmount ? defaultAmount : '',
+        method: 'cash',
+        notes: '',
+        isPending: false,
+      });
     }
-  }, [open, reset]);
+  }, [open, reset, isConfirm, defaultAmount]);
 
-  const onSubmit = async (values: PaymentFormValues & RefundFormValues) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       if (isPayment) {
         await addPayment({
@@ -79,10 +87,23 @@ export default function PaymentDialog({
           data: {
             amount: values.amount,
             method: values.method,
+            status: values.isPending ? 'pending' : 'completed',
             notes: values.notes || undefined,
           },
         }).unwrap();
-        enqueueSnackbar('Pago registrado correctamente', { variant: 'success' });
+        enqueueSnackbar(
+          values.isPending ? 'Pago pendiente registrado' : 'Pago registrado correctamente',
+          { variant: 'success' },
+        );
+      } else if (isConfirm) {
+        if (!paymentId) return;
+        await confirmPayment({
+          reservationId,
+          paymentId,
+          amount: values.amount,
+          notes: values.notes || undefined,
+        }).unwrap();
+        enqueueSnackbar('Pago confirmado correctamente', { variant: 'success' });
       } else {
         if (!paymentId) return;
         await refundPayment({
@@ -103,12 +124,22 @@ export default function PaymentDialog({
     }
   };
 
+  const title = isPayment
+    ? 'Agregar Pago'
+    : isConfirm
+      ? 'Confirmar Pago'
+      : 'Reembolsar Pago';
+
+  const submitLabel = isPayment
+    ? 'Registrar Pago'
+    : isConfirm
+      ? 'Confirmar Pago'
+      : 'Procesar Reembolso';
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogTitle>
-          {isPayment ? 'Agregar Pago' : 'Reembolsar Pago'}
-        </DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
           <TextField
             label="Monto"
@@ -150,6 +181,24 @@ export default function PaymentDialog({
             </FormControl>
           )}
 
+          {isPayment && (
+            <Controller
+              name="isPending"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  }
+                  label="Registrar como pendiente"
+                />
+              )}
+            />
+          )}
+
           <TextField
             label="Notas"
             multiline
@@ -163,7 +212,7 @@ export default function PaymentDialog({
             Cancelar
           </Button>
           <Button type="submit" variant="contained" disabled={isLoading}>
-            {isPayment ? 'Registrar Pago' : 'Procesar Reembolso'}
+            {submitLabel}
           </Button>
         </DialogActions>
       </form>

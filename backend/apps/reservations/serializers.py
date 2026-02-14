@@ -16,7 +16,12 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_by", "created_by_name",
             "processed_at",
         ]
-        read_only_fields = ["id", "created_by", "created_by_name", "processed_at", "status"]
+        read_only_fields = ["id", "created_by", "created_by_name", "processed_at"]
+
+    def validate_status(self, value):
+        if value not in ("pending", "completed"):
+            raise serializers.ValidationError("Solo se permite 'pending' o 'completed'.")
+        return value
 
 
 class ReservationListSerializer(serializers.ModelSerializer):
@@ -115,5 +120,10 @@ class CheckInSerializer(serializers.Serializer):
 
 
 class RefundSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    notes = serializers.CharField(required=False, default="")
+
+
+class ConfirmPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     notes = serializers.CharField(required=False, default="")

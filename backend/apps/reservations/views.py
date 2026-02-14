@@ -16,6 +16,7 @@ from .constants import financial_state_machine, operational_state_machine
 from .models import Payment, Reservation
 from .serializers import (
     CheckInSerializer,
+    ConfirmPaymentSerializer,
     PaymentSerializer,
     RefundSerializer,
     ReservationCreateSerializer,
@@ -263,6 +264,30 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
             status="completed",
             notes=serializer.validated_data.get("notes", ""),
         )
+
+        self._update_financial_status(reservation, request.user)
+        return Response(ReservationDetailSerializer(reservation).data)
+
+    @action(detail=True, methods=["post"], url_path="payments/(?P<payment_id>[^/.]+)/confirm")
+    def confirm_payment(self, request, pk=None, payment_id=None):
+        reservation = self.get_object()
+        payment = get_object_or_404(reservation.payments, pk=payment_id)
+
+        if payment.status != "pending":
+            return Response(
+                {"detail": "Solo se pueden confirmar pagos pendientes."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ConfirmPaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        payment.amount = serializer.validated_data["amount"]
+        payment.status = "completed"
+        notes = serializer.validated_data.get("notes", "")
+        if notes:
+            payment.notes = f"{payment.notes}\n{notes}".strip() if payment.notes else notes
+        payment.save(update_fields=["amount", "status", "notes", "updated_at"])
 
         self._update_financial_status(reservation, request.user)
         return Response(ReservationDetailSerializer(reservation).data)

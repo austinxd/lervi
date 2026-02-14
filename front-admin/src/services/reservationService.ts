@@ -46,8 +46,16 @@ export const reservationApi = createApi({
       query: (id) => ({ url: `/reservations/${id}/no-show/`, method: 'POST' }),
       invalidatesTags: (_r, _e, id) => [{ type: 'Reservation', id }, 'Room', 'Dashboard'],
     }),
-    addPayment: builder.mutation<Payment, { reservationId: string; data: { amount: string; method: string; notes?: string } }>({
+    addPayment: builder.mutation<Payment, { reservationId: string; data: { amount: string; method: string; status?: string; notes?: string } }>({
       query: ({ reservationId, data }) => ({ url: `/reservations/${reservationId}/payments/`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { reservationId }) => [{ type: 'Reservation', id: reservationId }, 'Dashboard'],
+    }),
+    confirmPayment: builder.mutation<ReservationDetail, { reservationId: string; paymentId: string; amount: string; notes?: string }>({
+      query: ({ reservationId, paymentId, amount, notes }) => ({
+        url: `/reservations/${reservationId}/payments/${paymentId}/confirm/`,
+        method: 'POST',
+        data: { amount, notes },
+      }),
       invalidatesTags: (_r, _e, { reservationId }) => [{ type: 'Reservation', id: reservationId }, 'Dashboard'],
     }),
     refundPayment: builder.mutation<ReservationDetail, { reservationId: string; paymentId: string; amount: string; notes?: string }>({
@@ -84,6 +92,6 @@ export const {
   useConfirmReservationMutation, useCheckInReservationMutation,
   useCheckOutReservationMutation, useCancelReservationMutation,
   useNoShowReservationMutation,
-  useAddPaymentMutation, useRefundPaymentMutation,
+  useAddPaymentMutation, useConfirmPaymentMutation, useRefundPaymentMutation,
   useUploadVoucherMutation, useDeleteReservationMutation,
 } = reservationApi;
