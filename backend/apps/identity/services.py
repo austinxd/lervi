@@ -20,6 +20,8 @@ def get_or_create_identity(
     document_number: str,
     email: str = "",
     full_name: str = "",
+    phone: str = "",
+    nationality: str = "",
 ) -> GlobalIdentity:
     """Get or create a GlobalIdentity from document credentials."""
     doc_hash = make_document_hash(document_type, document_number)
@@ -29,6 +31,8 @@ def get_or_create_identity(
             "document_type": document_type.lower(),
             "encrypted_email": encrypt_value(email) if email else None,
             "encrypted_name": encrypt_value(full_name) if full_name else None,
+            "encrypted_phone": encrypt_value(phone) if phone else None,
+            "encrypted_nationality": encrypt_value(nationality) if nationality else None,
             "encryption_version": 1,
         },
     )
@@ -41,8 +45,31 @@ def get_or_create_identity(
         if full_name and not identity.encrypted_name:
             identity.encrypted_name = encrypt_value(full_name)
             update_fields.append("encrypted_name")
+        if phone and not identity.encrypted_phone:
+            identity.encrypted_phone = encrypt_value(phone)
+            update_fields.append("encrypted_phone")
+        if nationality and not identity.encrypted_nationality:
+            identity.encrypted_nationality = encrypt_value(nationality)
+            update_fields.append("encrypted_nationality")
         identity.save(update_fields=update_fields)
     return identity
+
+
+def get_identity_data(identity: GlobalIdentity) -> dict:
+    """Decrypt and return all stored PII from a GlobalIdentity."""
+    data = {}
+    if identity.encrypted_name:
+        full_name = decrypt_value(identity.encrypted_name)
+        parts = full_name.split(" ", 1)
+        data["first_name"] = parts[0]
+        data["last_name"] = parts[1] if len(parts) > 1 else ""
+    if identity.encrypted_email:
+        data["email"] = decrypt_value(identity.encrypted_email)
+    if identity.encrypted_phone:
+        data["phone"] = decrypt_value(identity.encrypted_phone)
+    if identity.encrypted_nationality:
+        data["nationality"] = decrypt_value(identity.encrypted_nationality)
+    return data
 
 
 def create_identity_link(identity: GlobalIdentity, organization, guest: Guest):

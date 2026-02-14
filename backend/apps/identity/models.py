@@ -16,6 +16,8 @@ class GlobalIdentity(models.Model):
     )
     encrypted_email = models.BinaryField(blank=True, null=True)
     encrypted_name = models.BinaryField(blank=True, null=True)
+    encrypted_phone = models.BinaryField(blank=True, null=True)
+    encrypted_nationality = models.BinaryField(blank=True, null=True)
     encryption_version = models.PositiveSmallIntegerField(default=1)
     last_seen_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -94,6 +94,11 @@ urlpatterns = [
         name="public-guest-request-otp",
     ),
     path(
+        "<slug:org_slug>/guest/identity-data/",
+        views.GuestIdentityDataView.as_view(),
+        name="public-guest-identity-data",
+    ),
+    path(
         "<slug:org_slug>/guest/activate/",
         views.GuestActivateView.as_view(),
         name="public-guest-activate",

@@ -25,6 +25,7 @@ from .permissions import IsAuthenticatedGuest
 from .combinations import find_group_combinations
 from apps.identity.services import (
     create_identity_link,
+    get_identity_data,
     get_or_create_identity,
     get_guest_for_identity,
     has_link_in_org,
@@ -825,6 +826,8 @@ class GuestRegisterView(APIView):
             document_number=doc_number,
             email=data["email"],
             full_name=guest.full_name,
+            phone=data.get("phone", ""),
+            nationality=data.get("nationality", ""),
         )
         create_identity_link(identity, org, guest)
 
@@ -1045,6 +1048,21 @@ class GuestRequestOTPView(APIView):
         return Response({"detail": "Codigo enviado a su email."})
 
 
+class GuestIdentityDataView(APIView):
+    """Return pre-filled guest data from GlobalIdentity after OTP verification."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        """POST with document_type + document_number → returns stored PII."""
+        get_organization(org_slug)  # validate org exists
+        doc_type = request.data.get("document_type", "")
+        doc_number = normalize_document(request.data.get("document_number", ""))
+        identity, exists = lookup_identity(doc_type, doc_number)
+        if not exists:
+            return Response({})
+        return Response(get_identity_data(identity))
+
+
 class GuestActivateView(APIView):
     """Activate a guest in a new org using OTP verification."""
     permission_classes = [AllowAny]
@@ -1071,17 +1089,25 @@ class GuestActivateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Fill missing fields from GlobalIdentity
+        id_data = get_identity_data(identity)
+        first_name = data.get("first_name") or id_data.get("first_name", "")
+        last_name = data.get("last_name") or id_data.get("last_name", "")
+        email = data.get("email") or id_data.get("email", "")
+        phone = data.get("phone") or id_data.get("phone", "")
+        nationality = data.get("nationality") or id_data.get("nationality", "")
+
         # Get or create Guest in this org
         guest, created = Guest.objects.get_or_create(
             organization=org,
             document_type=data["document_type"],
             document_number=doc_number,
             defaults={
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-                "email": data["email"],
-                "phone": data.get("phone", ""),
-                "nationality": data.get("nationality", ""),
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "phone": phone,
+                "nationality": nationality,
                 "is_verified": True,
                 "last_login": timezone.now(),
             },

@@ -226,9 +226,9 @@ class GuestActivateSerializer(serializers.Serializer):
     document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
     document_number = serializers.CharField(max_length=50)
     code = serializers.CharField(max_length=6)
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
     nationality = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
 
