@@ -77,3 +77,34 @@ def send_welcome_email(to_email: str, guest_name: str, code: str, from_name: str
     })
     logger.info("Welcome email sent to %s: %s", to_email, result)
     return result
+
+
+def send_activate_welcome_email(to_email: str, guest_name: str, hotel_name: str = ""):
+    """Send a welcome email when a guest activates their account at a new hotel."""
+    import resend
+
+    resend.api_key = settings.RESEND_API_KEY
+
+    if not resend.api_key:
+        logger.error("RESEND_API_KEY is not configured")
+        raise RuntimeError("Servicio de email no configurado.")
+
+    subject = f"Bienvenido a {hotel_name}" if hotel_name else "Cuenta activada"
+
+    result = resend.Emails.send({
+        "from": _get_from_address(hotel_name),
+        "to": [to_email],
+        "subject": subject,
+        "html": (
+            f"<div style='font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>"
+            f"<h2 style='color: #1a1a2e;'>Bienvenido, {guest_name}!</h2>"
+            f"<p>Su cuenta ha sido activada exitosamente"
+            f"{' en <strong>' + hotel_name + '</strong>' if hotel_name else ''}.</p>"
+            f"<p>Ya puede gestionar sus reservas y acceder a todos los servicios.</p>"
+            f"<p style='color: #999; font-size: 12px;'>Si no reconoce esta actividad, "
+            f"puede ignorar este mensaje.</p>"
+            f"</div>"
+        ),
+    })
+    logger.info("Activate welcome email sent to %s: %s", to_email, result)
+    return result

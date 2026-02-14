@@ -33,6 +33,7 @@ from apps.identity.services import (
     request_otp,
     verify_otp,
 )
+from apps.identity.models import IdentityLink
 from apps.identity.utils import encrypt_value, normalize_document
 
 from .serializers import (
@@ -1097,6 +1098,17 @@ class GuestActivateView(APIView):
         phone = data.get("phone") or id_data.get("phone", "")
         nationality = data.get("nationality") or id_data.get("nationality", "")
 
+        # Copy password from existing guest in another org
+        password_hash = ""
+        source_link = (
+            IdentityLink.objects.filter(identity=identity)
+            .exclude(organization=org)
+            .select_related("guest")
+            .first()
+        )
+        if source_link and source_link.guest and source_link.guest.has_password:
+            password_hash = source_link.guest.password_hash
+
         # Get or create Guest in this org
         guest, created = Guest.objects.get_or_create(
             organization=org,
@@ -1108,6 +1120,7 @@ class GuestActivateView(APIView):
                 "email": email,
                 "phone": phone,
                 "nationality": nationality,
+                "password_hash": password_hash,
                 "is_verified": True,
                 "last_login": timezone.now(),
             },
@@ -1115,7 +1128,11 @@ class GuestActivateView(APIView):
         if not created:
             guest.is_verified = True
             guest.last_login = timezone.now()
-            guest.save(update_fields=["is_verified", "last_login"])
+            update_fields = ["is_verified", "last_login"]
+            if not guest.has_password and password_hash:
+                guest.password_hash = password_hash
+                update_fields.append("password_hash")
+            guest.save(update_fields=update_fields)
 
         # Create link
         create_identity_link(identity, org, guest)
@@ -1123,6 +1140,14 @@ class GuestActivateView(APIView):
         # Update identity last_seen
         identity.last_seen_at = timezone.now()
         identity.save(update_fields=["last_seen_at"])
+
+        # Send welcome email
+        if email:
+            from apps.common.email import send_activate_welcome_email
+            try:
+                send_activate_welcome_email(email, guest.full_name, hotel_name=org.name)
+            except Exception as exc:
+                _logger.exception("Welcome email on activate failed: %s", exc)
 
         return Response({
             "access": _generate_guest_token(guest),

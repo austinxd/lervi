@@ -213,7 +213,10 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      const fullPhone = actPhone ? `${getDialCode(actPhoneCountry)} ${actPhone}` : "";
+      // If phone already has dial code (pre-filled from identity), use as-is
+      const fullPhone = actPhone
+        ? actPhone.startsWith("+") ? actPhone : `${getDialCode(actPhoneCountry)} ${actPhone}`
+        : "";
       const session = await guestActivate(slug, {
         document_type: docType,
         document_number: docNumber,
