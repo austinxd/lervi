@@ -4,19 +4,15 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import HotelIcon from '@mui/icons-material/Hotel';
-import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { useAppSelector } from '../../store/hooks';
 import { useGetTodayQuery, useGetOccupancyQuery } from '../../services/dashboardService';
 import { formatCurrency } from '../../utils/formatters';
-import SummaryCard from './SummaryCard';
+import StatusBar from './StatusBar';
+import KpiHeroCards from './KpiHeroCards';
+import ActionPanel from './ActionPanel';
 import OccupancyChart from './OccupancyChart';
 import RevenueSection from './RevenueSection';
 import WebFunnelSection from './WebFunnelSection';
-import AlertsBanner from './AlertsBanner';
 import RoomReadinessCard from './RoomReadinessCard';
 import RoomTypePopularityChart from './RoomTypePopularityChart';
 import TaskBreakdownCard from './TaskBreakdownCard';
@@ -57,7 +53,7 @@ export default function DashboardPage() {
   const alerts = todayData?.alerts ?? [];
   const roomTypeOccupancy = todayData?.room_type_occupancy ?? [];
 
-  const roomsReadyLabel = rooms ? `${rooms.ready}/${rooms.total}` : '0';
+  const pendingReservations = (reservations?.incomplete ?? 0) + (reservations?.pending ?? 0);
 
   return (
     <Box>
@@ -65,44 +61,28 @@ export default function DashboardPage() {
         Dashboard
       </Typography>
 
-      {/* Alerts */}
-      <AlertsBanner alerts={alerts} />
+      {/* Status bar */}
+      <StatusBar
+        alerts={alerts}
+        inHouse={reservations?.in_house ?? 0}
+        urgentTasks={tasks?.urgent ?? 0}
+        pendingReservations={pendingReservations}
+      />
 
-      {/* Summary cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Check-ins hoy"
-            value={reservations?.check_ins_today ?? 0}
-            icon={<LoginIcon />}
-            color="#2E7D32"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Check-outs hoy"
-            value={reservations?.check_outs_today ?? 0}
-            icon={<LogoutIcon />}
-            color="#ED6C02"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="In-house"
-            value={reservations?.in_house ?? 0}
-            icon={<HotelIcon />}
-            color="#1976D2"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Hab. listas"
-            value={roomsReadyLabel}
-            icon={<CleaningServicesIcon />}
-            color="#00897B"
-          />
-        </Grid>
-      </Grid>
+      {/* KPI hero cards */}
+      <KpiHeroCards
+        occupancyRate={occupancyData?.current?.occupancy_rate ?? 0}
+        revenueToday={formatCurrency(revenueToday)}
+        inHouse={reservations?.in_house ?? 0}
+        checkInsToday={reservations?.check_ins_today ?? 0}
+      />
+
+      {/* Action panel */}
+      <ActionPanel
+        incompleteReservations={pendingReservations}
+        urgentTasks={tasks?.urgent ?? 0}
+        roomsNotReady={rooms?.not_ready ?? 0}
+      />
 
       {/* Occupancy chart + Room readiness */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -144,16 +124,6 @@ export default function DashboardPage() {
       {/* Revenue section (owners only) */}
       {isOwner && (
         <>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <SummaryCard
-                title="Revenue hoy"
-                value={formatCurrency(revenueToday)}
-                icon={<AttachMoneyIcon />}
-                color="#9C27B0"
-              />
-            </Grid>
-          </Grid>
           <RevenueSection />
           <Box sx={{ mt: 3 }}>
             <WebFunnelSection />
