@@ -12,17 +12,17 @@ const STEP_LABELS: Record<string, string> = {
   page_view: 'Visitas',
   search_dates: 'Busqueda de fechas',
   start_booking: 'Inicio de reserva',
-  guest_lookup_started: 'Registro huesped',
   booking_confirmed: 'Reserva confirmada',
 };
 
-const BAR_COLORS = ['#1976D2', '#2196F3', '#42A5F5', '#64B5F6', '#2E7D32'];
+const BAR_COLORS = ['#1976D2', '#42A5F5', '#64B5F6', '#2E7D32'];
 
-const STEP_HEIGHT = 44;
-const STEP_GAP = 4;
-const LABEL_WIDTH = 140;
-const VALUE_WIDTH = 60;
-const MIN_WIDTH_PCT = 15;
+const STEP_HEIGHT = 48;
+const STEP_GAP = 6;
+const SVG_WIDTH = 600;
+const MAX_BAR_WIDTH = 520;
+const CENTER_X = SVG_WIDTH / 2;
+const MIN_WIDTH_PCT = 8;
 
 interface FunnelChartProps {
   funnel: FunnelStep[];
@@ -60,88 +60,71 @@ export default function FunnelChart({ funnel, placeholder = false }: FunnelChart
     <Card>
       <CardContent>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Embudo de conversion
+          Intencion del usuario
         </Typography>
 
-        <Box sx={{ position: 'relative' }}>
-          <svg
-            width="100%"
-            viewBox={`0 0 600 ${totalHeight}`}
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {steps.map((step, i) => {
-              const y = i * (STEP_HEIGHT + STEP_GAP);
-              const prevWidthPct = i > 0 ? steps[i - 1].widthPct : step.widthPct;
-              const barMaxWidth = 600 - LABEL_WIDTH - VALUE_WIDTH;
+        <svg
+          width="100%"
+          viewBox={`0 0 ${SVG_WIDTH} ${totalHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {steps.map((step, i) => {
+            const y = i * (STEP_HEIGHT + STEP_GAP);
+            const barWidth = (step.widthPct / 100) * MAX_BAR_WIDTH;
+            const x = CENTER_X - barWidth / 2;
 
-              const topLeft = LABEL_WIDTH;
-              const topRight = LABEL_WIDTH + (prevWidthPct / 100) * barMaxWidth;
-              const bottomLeft = LABEL_WIDTH;
-              const bottomRight = LABEL_WIDTH + (step.widthPct / 100) * barMaxWidth;
-
-              const points = [
-                `${topLeft},${y}`,
-                `${topRight},${y}`,
-                `${bottomRight},${y + STEP_HEIGHT}`,
-                `${bottomLeft},${y + STEP_HEIGHT}`,
-              ].join(' ');
-
-              return (
-                <g key={step.step}>
-                  <polygon
-                    points={points}
-                    fill={step.color}
-                    opacity={placeholder ? 0.3 : 1}
-                    rx={4}
-                  />
+            return (
+              <g key={step.step}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={STEP_HEIGHT}
+                  rx={6}
+                  fill={step.color}
+                  opacity={placeholder ? 0.2 : 1}
+                />
+                <text
+                  x={x + 14}
+                  y={y + STEP_HEIGHT / 2 + 5}
+                  textAnchor="start"
+                  fontSize={13}
+                  fontWeight={600}
+                  fill={placeholder ? '#9E9E9E' : '#fff'}
+                >
+                  {step.label}
+                </text>
+                {!placeholder && (
                   <text
-                    x={LABEL_WIDTH - 8}
-                    y={y + STEP_HEIGHT / 2 + 4}
+                    x={x + barWidth - 14}
+                    y={y + STEP_HEIGHT / 2 + 5}
                     textAnchor="end"
-                    fontSize={12}
-                    fill="#616161"
+                    fontSize={14}
+                    fontWeight={700}
+                    fill="#fff"
                   >
-                    {step.label}
+                    {step.sessions}
                   </text>
-                  {!placeholder && (
-                    <text
-                      x={Math.max(topRight, bottomRight) + 8}
-                      y={y + STEP_HEIGHT / 2 + 4}
-                      textAnchor="start"
-                      fontSize={13}
-                      fontWeight={600}
-                      fill="#212121"
-                    >
-                      {step.sessions}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-
-          {placeholder && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Typography variant="body1" fontWeight={600} color="text.secondary">
-                Datos insuficientes
-              </Typography>
-            </Box>
-          )}
-        </Box>
+                )}
+                {/* Drop-off annotation between steps */}
+                {!placeholder && i < steps.length - 1 && dropOffs[i] && dropOffs[i].pct > 0 && (
+                  <text
+                    x={CENTER_X + MAX_BAR_WIDTH / 2 + 8}
+                    y={y + STEP_HEIGHT + STEP_GAP / 2 + 4}
+                    textAnchor="start"
+                    fontSize={11}
+                    fill={dropOffs[i].pct > 50 ? '#D32F2F' : '#9E9E9E'}
+                  >
+                    -{dropOffs[i].pct}%
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
 
         {!placeholder && dropOffs.length > 0 && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
             {dropOffs.map((d, i) => (
               <Chip
                 key={i}

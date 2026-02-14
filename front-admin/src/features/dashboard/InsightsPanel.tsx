@@ -14,7 +14,6 @@ const STEP_LABELS: Record<string, string> = {
   page_view: 'Visitas',
   search_dates: 'Busqueda de fechas',
   start_booking: 'Inicio de reserva',
-  guest_lookup_started: 'Registro huesped',
   booking_confirmed: 'Reserva confirmada',
 };
 

@@ -476,9 +476,20 @@ export interface FunnelStep {
   sessions: number;
 }
 
+export interface CheckoutFriction {
+  guest_lookup_started: number;
+  guest_login_success: number;
+  otp_requested: number;
+  otp_verified: number;
+  login_completion_pct: number;
+  otp_completion_pct: number;
+  avg_checkout_seconds: number | null;
+}
+
 export interface WebFunnelData {
   period: { start: string; end: string };
   funnel: FunnelStep[];
+  checkout_friction: CheckoutFriction;
   kpi_bridge: {
     total_reservations: number;
     web_reservations: number;

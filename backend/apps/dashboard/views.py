@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Min, Q, Sum
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -368,12 +368,20 @@ class WebFunnelView(APIView):
     required_role = "owner"
     permission_classes = [HasRolePermission]
 
+    # Intent funnel — user decision steps only
     FUNNEL_STEPS = [
         "page_view",
         "search_dates",
         "start_booking",
-        "guest_lookup_started",
         "booking_confirmed",
+    ]
+
+    # Checkout friction events — system/process steps
+    FRICTION_EVENTS = [
+        "guest_lookup_started",
+        "guest_login_success",
+        "otp_requested",
+        "otp_verified",
     ]
 
     def get(self, request):
@@ -407,6 +415,54 @@ class WebFunnelView(APIView):
                 .count()
             )
             funnel.append({"step": step, "sessions": sessions})
+
+        # --- Checkout friction metrics ---
+        friction_counts = {}
+        for evt in self.FRICTION_EVENTS:
+            friction_counts[evt] = (
+                event_qs.filter(event_name=evt)
+                .values("session_id")
+                .distinct()
+                .count()
+            )
+
+        lookup_started = friction_counts["guest_lookup_started"]
+        login_success = friction_counts["guest_login_success"]
+        otp_requested = friction_counts["otp_requested"]
+        otp_verified = friction_counts["otp_verified"]
+
+        login_completion_pct = (
+            round(login_success / lookup_started * 100, 1)
+            if lookup_started > 0
+            else 0
+        )
+        otp_completion_pct = (
+            round(otp_verified / otp_requested * 100, 1)
+            if otp_requested > 0
+            else 0
+        )
+
+        # Average checkout time: start_booking → booking_confirmed per session
+        start_times = dict(
+            event_qs.filter(event_name="start_booking")
+            .values("session_id")
+            .annotate(ts=Min("created_at"))
+            .values_list("session_id", "ts")
+        )
+        confirm_times = dict(
+            event_qs.filter(event_name="booking_confirmed")
+            .values("session_id")
+            .annotate(ts=Min("created_at"))
+            .values_list("session_id", "ts")
+        )
+        diffs = []
+        for sid, confirm_ts in confirm_times.items():
+            start_ts = start_times.get(sid)
+            if start_ts:
+                diff = (confirm_ts - start_ts).total_seconds()
+                if diff > 0:
+                    diffs.append(diff)
+        avg_checkout_seconds = round(sum(diffs) / len(diffs)) if diffs else None
 
         # --- KPI Bridge (reservation-level, property filterable) ---
         res_qs = Reservation.objects.filter(
@@ -484,6 +540,15 @@ class WebFunnelView(APIView):
                 "end": end.isoformat(),
             },
             "funnel": funnel,
+            "checkout_friction": {
+                "guest_lookup_started": lookup_started,
+                "guest_login_success": login_success,
+                "otp_requested": otp_requested,
+                "otp_verified": otp_verified,
+                "login_completion_pct": login_completion_pct,
+                "otp_completion_pct": otp_completion_pct,
+                "avg_checkout_seconds": avg_checkout_seconds,
+            },
             "kpi_bridge": {
                 "total_reservations": total_reservations,
                 "web_reservations": web_reservations,

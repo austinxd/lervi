@@ -15,6 +15,7 @@ import { useGetWebFunnelQuery } from '../../services/dashboardService';
 import FunnelChart from './FunnelChart';
 import KpiBridgeCards from './KpiBridgeCards';
 import InsightsPanel from './InsightsPanel';
+import CheckoutFrictionPanel from './CheckoutFrictionPanel';
 import type { DataTier } from './InsightsPanel';
 
 type Period = 'today' | '7d' | '30d';
@@ -112,6 +113,7 @@ export default function WebFunnelSection() {
                 </Alert>
               )}
 
+              {/* Intención del usuario: funnel + insights */}
               <Grid container spacing={2}>
                 <Grid item xs={12} md={tier === 'collecting' ? 12 : 7}>
                   <FunnelChart funnel={data.funnel} placeholder={tier === 'collecting'} />
@@ -129,6 +131,13 @@ export default function WebFunnelSection() {
                   </Grid>
                 )}
               </Grid>
+
+              {/* Fricción del checkout */}
+              {tier !== 'collecting' && (
+                <Box sx={{ mt: 3 }}>
+                  <CheckoutFrictionPanel friction={data.checkout_friction} />
+                </Box>
+              )}
 
               {/* Línea de negocio */}
               {data.kpi_bridge.total_reservations > 0 && (
