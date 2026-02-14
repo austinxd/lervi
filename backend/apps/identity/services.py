@@ -128,7 +128,10 @@ def request_otp(identity: GlobalIdentity, organization_name: str = "") -> dict:
     if not email:
         return {"error": "No hay un email asociado a esta cuenta."}
 
-    send_otp_email(email, code, from_name=organization_name)
+    try:
+        send_otp_email(email, code, from_name=organization_name)
+    except Exception as exc:
+        return {"error": f"Error al enviar email: {exc}"}
 
     return {"ok": True}
 

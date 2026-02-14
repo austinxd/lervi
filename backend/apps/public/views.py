@@ -827,6 +827,8 @@ class GuestRegisterView(APIView):
         from apps.common.email import send_welcome_email
         from apps.identity.utils import generate_otp_code
         from apps.identity.models import OTPCode
+        import logging
+        _logger = logging.getLogger(__name__)
         if data["email"]:
             code = generate_otp_code()
             otp_lifetime = getattr(settings, "OTP_LIFETIME_MINUTES", 10)
@@ -835,7 +837,10 @@ class GuestRegisterView(APIView):
                 code=code,
                 expires_at=timezone.now() + timedelta(minutes=otp_lifetime),
             )
-            send_welcome_email(data["email"], guest.full_name, code, from_name=org.name)
+            try:
+                send_welcome_email(data["email"], guest.full_name, code, from_name=org.name)
+            except Exception as exc:
+                _logger.exception("Welcome email failed: %s", exc)
 
         return Response({
             "access": _generate_guest_token(guest),
