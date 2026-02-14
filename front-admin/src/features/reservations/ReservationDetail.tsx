@@ -86,6 +86,7 @@ export default function ReservationDetail() {
     paymentId?: string;
     maxAmount?: number;
     defaultAmount?: string;
+    autoConfirmReservation?: boolean;
   }>({ open: false, mode: 'payment' });
 
   const openAction = (action: ActionKey, title: string, message: string) => {
@@ -154,6 +155,27 @@ export default function ReservationDetail() {
       paymentId: payment.id,
       defaultAmount: payment.amount,
     });
+  };
+
+  const openVoucherPaymentDialog = () => {
+    if (!reservation) return;
+    setPaymentDialog({
+      open: true,
+      mode: 'payment',
+      defaultAmount: reservation.total_amount,
+      autoConfirmReservation: true,
+    });
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!reservation || !paymentDialog.autoConfirmReservation) return;
+    if (!['pending', 'incomplete'].includes(reservation.operational_status)) return;
+    try {
+      await confirmReservation(reservation.id).unwrap();
+      enqueueSnackbar('Reservacion confirmada', { variant: 'success' });
+    } catch {
+      // Payment was created, reservation confirmation failed — user can confirm manually
+    }
   };
 
   const handleUploadVoucher = async () => {
@@ -468,13 +490,7 @@ export default function ReservationDetail() {
                     <Button
                       variant="contained"
                       color="primary"
-                      onClick={() =>
-                        openAction(
-                          'confirm',
-                          'Confirmar reservacion',
-                          'El comprobante de pago ha sido verificado. Confirmar esta reservacion?',
-                        )
-                      }
+                      onClick={openVoucherPaymentDialog}
                     >
                       Confirmar pago
                     </Button>
@@ -662,6 +678,7 @@ export default function ReservationDetail() {
         paymentId={paymentDialog.paymentId}
         maxAmount={paymentDialog.maxAmount}
         defaultAmount={paymentDialog.defaultAmount}
+        onSuccess={handlePaymentSuccess}
       />
     </Box>
   );

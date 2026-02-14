@@ -26,6 +26,7 @@ interface Props {
   paymentId?: string;
   maxAmount?: number;
   defaultAmount?: string;
+  onSuccess?: () => void;
 }
 
 interface FormValues {
@@ -43,6 +44,7 @@ export default function PaymentDialog({
   paymentId,
   maxAmount,
   defaultAmount,
+  onSuccess,
 }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const [addPayment, { isLoading: isAdding }] = useAddPaymentMutation();
@@ -71,7 +73,7 @@ export default function PaymentDialog({
   useEffect(() => {
     if (open) {
       reset({
-        amount: isConfirm && defaultAmount ? defaultAmount : '',
+        amount: defaultAmount || '',
         method: 'cash',
         notes: '',
         isPending: false,
@@ -115,6 +117,7 @@ export default function PaymentDialog({
         enqueueSnackbar('Reembolso procesado correctamente', { variant: 'success' });
       }
       onClose();
+      onSuccess?.();
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'data' in err
