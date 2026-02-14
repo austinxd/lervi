@@ -973,9 +973,38 @@ class GuestLookupView(APIView):
                 document_number=doc_number,
             ).first()
             if local_guest:
+                # Create GlobalIdentity from this guest so cross-hotel works
+                local_identity = get_or_create_identity(
+                    document_type=data["document_type"],
+                    document_number=doc_number,
+                    email=local_guest.email,
+                    full_name=local_guest.full_name,
+                    phone=local_guest.phone,
+                    nationality=local_guest.nationality,
+                )
+                create_identity_link(local_identity, org, local_guest)
                 if local_guest.has_password:
                     return Response({"status": "login"})
                 return Response({"status": "register"})
+
+            # No identity and no local guest — check if guest exists in ANY org
+            any_guest = Guest.objects.filter(
+                document_type=data["document_type"],
+                document_number=doc_number,
+            ).first()
+            if any_guest:
+                # Create GlobalIdentity so cross-hotel activation works
+                identity = get_or_create_identity(
+                    document_type=data["document_type"],
+                    document_number=doc_number,
+                    email=any_guest.email,
+                    full_name=any_guest.full_name,
+                    phone=any_guest.phone,
+                    nationality=any_guest.nationality,
+                )
+                create_identity_link(identity, any_guest.organization, any_guest)
+                return Response({"status": "recognized"})
+
             return Response({"status": "new"})
 
         # Check if there's already a guest linked in this org
