@@ -7,12 +7,15 @@ import {
   CircularProgress,
   Alert,
   Grid,
+  Card,
+  CardContent,
 } from '@mui/material';
 import { useAppSelector } from '../../store/hooks';
 import { useGetWebFunnelQuery } from '../../services/dashboardService';
 import FunnelChart from './FunnelChart';
 import KpiBridgeCards from './KpiBridgeCards';
 import InsightsPanel from './InsightsPanel';
+import type { DataTier } from './InsightsPanel';
 
 type Period = 'today' | '7d' | '30d';
 
@@ -22,6 +25,8 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: '30d', label: '30 dias' },
 ];
 
+const FUNNEL_MIN_SESSIONS = 30;
+
 export default function WebFunnelSection() {
   const activePropertyId = useAppSelector((s) => s.auth.activePropertyId);
   const [period, setPeriod] = useState<Period>('7d');
@@ -30,6 +35,19 @@ export default function WebFunnelSection() {
     property: activePropertyId ?? undefined,
     period,
   });
+
+  const totalSessions = data?.funnel[0]?.sessions ?? 0;
+  const tier: DataTier = totalSessions < FUNNEL_MIN_SESSIONS
+    ? 'collecting'
+    : totalSessions < 100
+      ? 'initial'
+      : 'reliable';
+
+  const pageViews = data?.funnel.find((s) => s.step === 'page_view')?.sessions ?? 0;
+  const bookingConfirmed = data?.funnel.find((s) => s.step === 'booking_confirmed')?.sessions ?? 0;
+  const conversionRate = tier !== 'collecting' && pageViews > 0
+    ? (bookingConfirmed / pageViews * 100).toFixed(1)
+    : '—';
 
   return (
     <Box>
@@ -73,20 +91,51 @@ export default function WebFunnelSection() {
                   pctDirect={data.kpi_bridge.pct_direct}
                 />
               </Box>
+
+              {/* KPI Tasa de conversión web */}
+              <Card sx={{ mb: 3, borderLeft: '4px solid #2E7D32' }}>
+                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box>
+                    <Typography variant="h3" fontWeight={800} color="#2E7D32">
+                      {conversionRate}{conversionRate !== '—' ? '%' : ''}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tasa de conversion web
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {tier === 'collecting' && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Recolectando datos suficientes para analisis. Se necesitan al menos 30 sesiones para generar insights confiables.
+                </Alert>
+              )}
+
               <Grid container spacing={2}>
-                <Grid item xs={12} md={7}>
-                  <FunnelChart funnel={data.funnel} />
+                <Grid item xs={12} md={tier === 'collecting' ? 12 : 7}>
+                  <FunnelChart funnel={data.funnel} placeholder={tier === 'collecting'} />
                 </Grid>
-                <Grid item xs={12} md={5}>
-                  <InsightsPanel
-                    mainAbandonmentStep={data.insights.main_abandonment_step}
-                    mainAbandonmentDropPct={data.insights.main_abandonment_drop_pct}
-                    currentConversionRate={data.insights.current_conversion_rate}
-                    prevConversionRate={data.insights.prev_conversion_rate}
-                    wowChange={data.insights.wow_change}
-                  />
-                </Grid>
+                {tier !== 'collecting' && (
+                  <Grid item xs={12} md={5}>
+                    <InsightsPanel
+                      mainAbandonmentStep={data.insights.main_abandonment_step}
+                      mainAbandonmentDropPct={data.insights.main_abandonment_drop_pct}
+                      currentConversionRate={data.insights.current_conversion_rate}
+                      prevConversionRate={data.insights.prev_conversion_rate}
+                      wowChange={data.insights.wow_change}
+                      tier={tier}
+                    />
+                  </Grid>
+                )}
               </Grid>
+
+              {/* Línea de negocio */}
+              {data.kpi_bridge.total_reservations > 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Reservas web: {data.kpi_bridge.web_reservations} de {data.kpi_bridge.total_reservations} reservas totales ({data.kpi_bridge.pct_direct}%)
+                </Typography>
+              )}
             </>
           )}
         </>
