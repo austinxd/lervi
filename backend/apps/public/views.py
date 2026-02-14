@@ -889,6 +889,16 @@ class GuestLookupView(APIView):
         identity, exists = lookup_identity(data["document_type"], doc_number)
 
         if not exists:
+            # Check local Guest table (pre-identity guests)
+            local_guest = Guest.objects.filter(
+                organization=org,
+                document_type=data["document_type"],
+                document_number=doc_number,
+            ).first()
+            if local_guest:
+                if local_guest.has_password:
+                    return Response({"status": "login"})
+                return Response({"status": "register"})
             return Response({"status": "new"})
 
         # Check if there's already a guest linked in this org
