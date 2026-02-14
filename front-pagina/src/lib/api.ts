@@ -235,6 +235,23 @@ export async function guestRequestOtp(
   return res.json();
 }
 
+export async function guestIdentityData(
+  slug: string,
+  documentType: string,
+  documentNumber: string
+): Promise<{ first_name?: string; last_name?: string; email?: string; phone?: string; nationality?: string }> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest/identity-data/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      document_type: documentType,
+      document_number: documentNumber,
+    }),
+  });
+  if (!res.ok) return {};
+  return res.json();
+}
+
 export async function guestActivate(
   slug: string,
   data: {

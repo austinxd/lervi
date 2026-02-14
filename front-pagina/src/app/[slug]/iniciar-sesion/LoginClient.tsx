@@ -10,6 +10,7 @@ import {
   guestRequestOtp,
   guestActivate,
   guestVerifyEmail,
+  guestIdentityData,
 } from "@/lib/api";
 import { setGuestSession } from "@/lib/guest-auth";
 import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
@@ -83,6 +84,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const [verifyCode, setVerifyCode] = useState("");
 
   // OTP / Activate fields
+  const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [actFirstName, setActFirstName] = useState("");
   const [actLastName, setActLastName] = useState("");
@@ -107,6 +109,15 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
           setStep("register");
           break;
         case "recognized":
+          // Fetch identity data to pre-fill activate form
+          try {
+            const idData = await guestIdentityData(slug, docType, docNumber);
+            if (idData.first_name) setActFirstName(idData.first_name);
+            if (idData.last_name) setActLastName(idData.last_name);
+            if (idData.email) setActEmail(idData.email);
+            if (idData.phone) setActPhone(idData.phone);
+            if (idData.nationality) setActNationality(idData.nationality);
+          } catch { /* proceed without prefill */ }
           setStep("otp");
           setInfo("Encontramos una cuenta asociada a este documento. Verifique su identidad con un codigo enviado a su email.");
           break;
@@ -188,6 +199,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     setSubmitting(true);
     try {
       await guestRequestOtp(slug, docType, docNumber);
+      setOtpSent(true);
       setInfo("Codigo enviado a su email.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al solicitar codigo");
@@ -489,43 +501,59 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                   <span className="font-medium">{DOCUMENT_TYPES.find(d => d.value === docType)?.label}:</span> {docNumber}
                 </div>
 
-                <p className="text-sm text-gray-600">
-                  Solicite un codigo de verificacion. Lo enviaremos al email asociado a su cuenta.
-                </p>
+                {!otpSent ? (
+                  <>
+                    <p className="text-sm text-gray-600">
+                      Solicite un codigo de verificacion. Lo enviaremos al email asociado a su cuenta.
+                    </p>
 
-                <button
-                  type="button"
-                  onClick={handleRequestOtp}
-                  disabled={submitting}
-                  className="btn-primary w-full disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      {spinner} Enviando...
-                    </span>
-                  ) : "Enviar codigo"}
-                </button>
+                    <button
+                      type="button"
+                      onClick={handleRequestOtp}
+                      disabled={submitting}
+                      className="btn-primary w-full disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          {spinner} Enviando...
+                        </span>
+                      ) : "Enviar codigo"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="label-field">Codigo de verificacion</label>
+                      <input
+                        type="text"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="000000"
+                        maxLength={6}
+                        autoFocus
+                        className="input-field text-center text-2xl tracking-[0.3em]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="label-field">Codigo de verificacion</label>
-                  <input
-                    type="text"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
-                    maxLength={6}
-                    className="input-field text-center text-2xl tracking-[0.3em]"
-                  />
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => { setStep("activate"); setError(null); setInfo(null); }}
+                      disabled={otpCode.length !== 6}
+                      className="btn-primary w-full disabled:opacity-50"
+                    >
+                      Verificar codigo
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => { setStep("activate"); setError(null); setInfo(null); }}
-                  disabled={otpCode.length !== 6}
-                  className="btn-primary w-full disabled:opacity-50"
-                >
-                  Verificar codigo
-                </button>
+                    <button
+                      type="button"
+                      onClick={handleRequestOtp}
+                      disabled={submitting}
+                      className="w-full text-sm text-accent-600 hover:text-accent-700"
+                    >
+                      {submitting ? "Reenviando..." : "Reenviar codigo"}
+                    </button>
+                  </>
+                )}
 
                 <button
                   type="button"
@@ -540,54 +568,9 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
             {/* STEP: ACTIVATE (complete profile after OTP) */}
             {step === "activate" && (
               <form onSubmit={handleActivate} className="space-y-5">
-                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
-                  Complete sus datos para activar su cuenta en este hotel.
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label-field">Nombre <span className="text-red-400">*</span></label>
-                    <input type="text" required value={actFirstName} onChange={(e) => setActFirstName(e.target.value)} className="input-field" placeholder="Juan" />
-                  </div>
-                  <div>
-                    <label className="label-field">Apellido <span className="text-red-400">*</span></label>
-                    <input type="text" required value={actLastName} onChange={(e) => setActLastName(e.target.value)} className="input-field" placeholder="Perez" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="label-field">Email <span className="text-red-400">*</span></label>
-                  <input type="email" required value={actEmail} onChange={(e) => setActEmail(e.target.value)} className="input-field" placeholder="juan@email.com" />
-                </div>
-
-                <div>
-                  <label className="label-field">Telefono</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={actPhoneCountry}
-                      onChange={(e) => setActPhoneCountry(e.target.value)}
-                      className="input-field w-[120px] flex-shrink-0"
-                    >
-                      {COUNTRY_PHONE_CODES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
-                      ))}
-                    </select>
-                    <input type="tel" value={actPhone} onChange={(e) => setActPhone(e.target.value)} className="input-field flex-1" placeholder="999 999 999" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="label-field">Nacionalidad</label>
-                  <select
-                    value={actNationality}
-                    onChange={(e) => setActNationality(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">Seleccionar nacionalidad</option>
-                    {NATIONALITIES.map((n) => (
-                      <option key={n.value} value={n.value}>{n.label}</option>
-                    ))}
-                  </select>
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-4 text-sm space-y-2">
+                  <p className="font-medium">Identidad verificada</p>
+                  <p>Reconocimos su cuenta. Sus datos seran los mismos que en su cuenta existente.</p>
                 </div>
 
                 <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-50">
@@ -595,7 +578,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                     <span className="flex items-center justify-center gap-2">
                       {spinner} Activando...
                     </span>
-                  ) : "Activar cuenta"}
+                  ) : "Activar mi cuenta en este hotel"}
                 </button>
 
                 <button
