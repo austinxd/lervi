@@ -983,7 +983,18 @@ class GuestLookupView(APIView):
             guest = get_guest_for_identity(identity, org)
             if guest and guest.has_password:
                 return Response({"status": "login"})
-            # Guest exists but no password (e.g. from a reservation)
+            # Guest exists but no password — try to copy from another org
+            if guest:
+                source_link = (
+                    IdentityLink.objects.filter(identity=identity)
+                    .exclude(organization=org)
+                    .select_related("guest")
+                    .first()
+                )
+                if source_link and source_link.guest and source_link.guest.has_password:
+                    guest.password_hash = source_link.guest.password_hash
+                    guest.save(update_fields=["password_hash"])
+                    return Response({"status": "login"})
             return Response({"status": "register"})
 
         # Identity exists globally but not in this org
