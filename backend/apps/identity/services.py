@@ -125,8 +125,10 @@ def request_otp(identity: GlobalIdentity, organization_name: str = "") -> dict:
     if identity.encrypted_email:
         email = decrypt_value(identity.encrypted_email)
 
-    if email:
-        send_otp_email(email, code, from_name=organization_name)
+    if not email:
+        return {"error": "No hay un email asociado a esta cuenta."}
+
+    send_otp_email(email, code, from_name=organization_name)
 
     return {"ok": True}
 

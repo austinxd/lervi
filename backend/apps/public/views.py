@@ -972,7 +972,12 @@ class GuestLookupView(APIView):
             # Guest exists but no password (e.g. from a reservation)
             return Response({"status": "register"})
 
-        # Identity exists globally but not in this org — recognized cross-hotel
+        # Identity exists globally but not in this org
+        # Check if it has any links at all (guest may have been deleted)
+        if not identity.links.exists():
+            return Response({"status": "new"})
+
+        # Recognized cross-hotel
         return Response({"status": "recognized"})
 
 
