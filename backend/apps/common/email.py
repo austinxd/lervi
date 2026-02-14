@@ -37,3 +37,33 @@ def send_otp_email(to_email: str, code: str, from_name: str = ""):
         })
     except Exception:
         logger.exception("Failed to send OTP email to %s", to_email)
+
+
+def send_welcome_email(to_email: str, guest_name: str, from_name: str = ""):
+    """Send a welcome email after guest registration."""
+    try:
+        import resend
+
+        resend.api_key = settings.RESEND_API_KEY
+
+        from_address = settings.RESEND_FROM_EMAIL
+        if from_name:
+            from_address = f"{from_name} <{from_address}>"
+
+        resend.Emails.send({
+            "from": from_address,
+            "to": [to_email],
+            "subject": f"Bienvenido a {from_name}" if from_name else "Bienvenido",
+            "html": (
+                f"<div style='font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>"
+                f"<h2 style='color: #1a1a2e;'>Bienvenido, {guest_name}!</h2>"
+                f"<p>Tu cuenta ha sido creada exitosamente.</p>"
+                f"<p>Ahora puedes iniciar sesion con tu documento y contraseña "
+                f"para gestionar tus reservas.</p>"
+                f"<p style='color: #999; font-size: 12px;'>Si no creaste esta cuenta, "
+                f"puedes ignorar este mensaje.</p>"
+                f"</div>"
+            ),
+        })
+    except Exception:
+        logger.exception("Failed to send welcome email to %s", to_email)

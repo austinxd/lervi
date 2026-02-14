@@ -822,6 +822,11 @@ class GuestRegisterView(APIView):
         )
         create_identity_link(identity, org, guest)
 
+        # Send welcome email
+        from apps.common.email import send_welcome_email
+        if data["email"]:
+            send_welcome_email(data["email"], guest.full_name, from_name=org.name)
+
         return Response({
             "access": _generate_guest_token(guest),
             "guest_name": guest.full_name,

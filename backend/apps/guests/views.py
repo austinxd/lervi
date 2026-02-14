@@ -11,7 +11,7 @@ from .serializers import GuestListSerializer, GuestNoteSerializer, GuestSerializ
 class GuestViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     serializer_class = GuestSerializer
     queryset = Guest.objects.all()
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     search_fields = ["first_name", "last_name", "email", "document_number"]
     filterset_fields = ["is_vip"]
 
