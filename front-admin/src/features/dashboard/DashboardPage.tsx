@@ -15,6 +15,7 @@ import { formatCurrency } from '../../utils/formatters';
 import SummaryCard from './SummaryCard';
 import OccupancyChart from './OccupancyChart';
 import RevenueSection from './RevenueSection';
+import WebFunnelSection from './WebFunnelSection';
 import AlertsBanner from './AlertsBanner';
 import RoomReadinessCard from './RoomReadinessCard';
 import RoomTypePopularityChart from './RoomTypePopularityChart';
@@ -154,6 +155,9 @@ export default function DashboardPage() {
             </Grid>
           </Grid>
           <RevenueSection />
+          <Box sx={{ mt: 3 }}>
+            <WebFunnelSection />
+          </Box>
         </>
       )}
     </Box>

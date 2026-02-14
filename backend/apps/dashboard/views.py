@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.permissions import HasRolePermission
+from apps.events.models import EventLog
 from apps.reservations.models import Payment, Reservation
 from apps.rooms.models import Room, RoomType
 from apps.tasks.models import Task
@@ -354,5 +355,145 @@ class RevenueView(APIView):
             "reservations": {
                 "created": reservations_created,
                 "by_status": reservations_by_status,
+            },
+        })
+
+
+class WebFunnelView(APIView):
+    """
+    GET /api/v1/dashboard/web-funnel/
+    Web funnel analytics for the booking engine.
+    Query params: property (optional), period (today|7d|30d, default 7d)
+    """
+    required_role = "owner"
+    permission_classes = [HasRolePermission]
+
+    FUNNEL_STEPS = [
+        "page_view",
+        "search_dates",
+        "start_booking",
+        "guest_lookup_started",
+        "booking_confirmed",
+    ]
+
+    def get(self, request):
+        org = request.organization
+        today = timezone.localdate()
+        property_id = request.query_params.get("property")
+        period = request.query_params.get("period", "7d")
+
+        # Determine date range
+        if period == "today":
+            start = today
+        elif period == "30d":
+            start = today - timedelta(days=29)
+        else:  # 7d
+            start = today - timedelta(days=6)
+        end = today
+
+        # --- Funnel (event-level, no property filter) ---
+        event_qs = EventLog.objects.filter(
+            organization=org,
+            created_at__date__gte=start,
+            created_at__date__lte=end,
+        )
+
+        funnel = []
+        for step in self.FUNNEL_STEPS:
+            sessions = (
+                event_qs.filter(event_name=step)
+                .values("session_id")
+                .distinct()
+                .count()
+            )
+            funnel.append({"step": step, "sessions": sessions})
+
+        # --- KPI Bridge (reservation-level, property filterable) ---
+        res_qs = Reservation.objects.filter(
+            organization=org,
+            created_at__date__gte=start,
+            created_at__date__lte=end,
+        )
+        if property_id:
+            res_qs = res_qs.filter(property_id=property_id)
+
+        total_reservations = res_qs.count()
+        web_reservations = res_qs.filter(origin_type="website").count()
+        pct_direct = (
+            round(web_reservations / total_reservations * 100, 1)
+            if total_reservations > 0
+            else 0
+        )
+
+        # --- Insights ---
+        # Main abandonment step
+        main_abandonment_step = None
+        main_abandonment_drop_pct = 0
+        for i in range(len(funnel) - 1):
+            current_sessions = funnel[i]["sessions"]
+            next_sessions = funnel[i + 1]["sessions"]
+            if current_sessions > 0:
+                drop = round(
+                    (current_sessions - next_sessions) / current_sessions * 100, 1
+                )
+                if drop > main_abandonment_drop_pct:
+                    main_abandonment_drop_pct = drop
+                    main_abandonment_step = funnel[i]["step"]
+
+        # Week-over-week conversion rate
+        first_sessions = funnel[0]["sessions"] if funnel else 0
+        last_sessions = funnel[-1]["sessions"] if funnel else 0
+        current_conversion_rate = (
+            round(last_sessions / first_sessions * 100, 2)
+            if first_sessions > 0
+            else 0
+        )
+
+        # Previous period for comparison
+        period_days = (end - start).days + 1
+        prev_end = start - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=period_days - 1)
+
+        prev_event_qs = EventLog.objects.filter(
+            organization=org,
+            created_at__date__gte=prev_start,
+            created_at__date__lte=prev_end,
+        )
+        prev_page_views = (
+            prev_event_qs.filter(event_name="page_view")
+            .values("session_id")
+            .distinct()
+            .count()
+        )
+        prev_confirmed = (
+            prev_event_qs.filter(event_name="booking_confirmed")
+            .values("session_id")
+            .distinct()
+            .count()
+        )
+        prev_conversion_rate = (
+            round(prev_confirmed / prev_page_views * 100, 2)
+            if prev_page_views > 0
+            else 0
+        )
+        wow_change = round(current_conversion_rate - prev_conversion_rate, 2)
+
+        return Response({
+            "period": {
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            },
+            "funnel": funnel,
+            "kpi_bridge": {
+                "total_reservations": total_reservations,
+                "web_reservations": web_reservations,
+                "pct_direct": pct_direct,
+            },
+            "insights": {
+                "main_abandonment_step": main_abandonment_step,
+                "main_abandonment_drop_pct": main_abandonment_drop_pct,
+                "current_conversion_rate": current_conversion_rate,
+                "prev_conversion_rate": prev_conversion_rate,
+                "wow_change": wow_change,
             },
         })

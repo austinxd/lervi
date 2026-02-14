@@ -470,3 +470,25 @@ export interface RevenueData {
     by_status: Record<string, number>;
   };
 }
+
+export interface FunnelStep {
+  step: string;
+  sessions: number;
+}
+
+export interface WebFunnelData {
+  period: { start: string; end: string };
+  funnel: FunnelStep[];
+  kpi_bridge: {
+    total_reservations: number;
+    web_reservations: number;
+    pct_direct: number;
+  };
+  insights: {
+    main_abandonment_step: string | null;
+    main_abandonment_drop_pct: number;
+    current_conversion_rate: number;
+    prev_conversion_rate: number;
+    wow_change: number;
+  };
+}

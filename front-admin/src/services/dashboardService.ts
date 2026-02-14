@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '../api/baseQuery';
-import type { DashboardToday, OccupancyData, RevenueData } from '../interfaces/types';
+import type { DashboardToday, OccupancyData, RevenueData, WebFunnelData } from '../interfaces/types';
 
 export const dashboardApi = createApi({
   reducerPath: 'dashboardApi',
@@ -28,7 +28,19 @@ export const dashboardApi = createApi({
       }),
       providesTags: ['Dashboard'],
     }),
+    getWebFunnel: builder.query<WebFunnelData, { property?: string; period?: string }>({
+      query: ({ property, period = '7d' }) => ({
+        url: '/dashboard/web-funnel/',
+        params: { ...(property && { property }), period },
+      }),
+      providesTags: ['Dashboard'],
+    }),
   }),
 });
 
-export const { useGetTodayQuery, useGetOccupancyQuery, useGetRevenueQuery } = dashboardApi;
+export const {
+  useGetTodayQuery,
+  useGetOccupancyQuery,
+  useGetRevenueQuery,
+  useGetWebFunnelQuery,
+} = dashboardApi;
