@@ -9,6 +9,21 @@ urlpatterns = [
         name="public-resolve-domain",
     ),
     path(
+        "hotels/",
+        views.PublicHotelSearchView.as_view(),
+        name="public-hotel-search",
+    ),
+    path(
+        "register-hotel/",
+        views.RegisterHotelView.as_view(),
+        name="public-register-hotel",
+    ),
+    path(
+        "contact/",
+        views.ContactView.as_view(),
+        name="public-contact",
+    ),
+    path(
         "<slug:org_slug>/info/",
         views.OrganizationInfoView.as_view(),
         name="public-org-info",

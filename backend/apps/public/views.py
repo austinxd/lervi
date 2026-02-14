@@ -1,12 +1,14 @@
+import logging
 import uuid
 from datetime import date, timedelta
 
 import jwt
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Min, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -35,6 +37,7 @@ from apps.identity.utils import normalize_document
 from .serializers import (
     AvailabilityResultSerializer,
     CombinationResultSerializer,
+    ContactSerializer,
     GroupReservationConfirmationSerializer,
     GuestActivateSerializer,
     GuestLoginSerializer,
@@ -47,7 +50,9 @@ from .serializers import (
     OrganizationInfoSerializer,
     PublicBankAccountSerializer,
     PublicGroupReservationSerializer,
+    PublicHotelListSerializer,
     PublicReservationSerializer,
+    RegisterHotelSerializer,
     ReservationConfirmationSerializer,
     RoomTypeDetailSerializer,
     RoomTypeListSerializer,
@@ -1153,3 +1158,193 @@ class GuestCancelReservationView(APIView):
         reservation.save(update_fields=["operational_status", "updated_at"])
 
         return Response({"detail": "Reserva cancelada exitosamente."})
+
+
+logger = logging.getLogger(__name__)
+
+
+class PublicHotelSearchView(APIView):
+    """Search active hotels/organizations publicly."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Get active orgs that have at least one active property
+        orgs = Organization.objects.filter(
+            is_active=True,
+            properties__is_active=True,
+        ).distinct()
+
+        # Search filters
+        q = request.query_params.get("q", "").strip()
+        city = request.query_params.get("city", "").strip()
+        stars = request.query_params.get("stars")
+
+        if q:
+            orgs = orgs.filter(
+                Q(name__icontains=q) | Q(properties__name__icontains=q)
+            ).distinct()
+
+        results = []
+        for org in orgs:
+            for prop in org.properties.filter(is_active=True):
+                if city and prop.city.lower() != city.lower():
+                    continue
+                if stars:
+                    try:
+                        if prop.stars != int(stars):
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
+                min_price = RoomType.objects.filter(
+                    property=prop, is_active=True
+                ).aggregate(min_price=Min("base_price"))["min_price"]
+
+                results.append({
+                    "org_name": org.name,
+                    "subdomain": org.subdomain,
+                    "logo": org.logo,
+                    "theme_template": org.theme_template,
+                    "property_name": prop.name,
+                    "city": prop.city,
+                    "country": prop.country,
+                    "stars": prop.stars,
+                    "hero_image": prop.hero_image if prop.hero_image else None,
+                    "tagline": prop.tagline,
+                    "amenities": (prop.amenities or [])[:5],
+                    "min_price": min_price,
+                })
+
+        # Manual pagination
+        page = int(request.query_params.get("page", 1))
+        page_size = 12
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = results[start:end]
+
+        serializer = PublicHotelListSerializer(paginated, many=True)
+        return Response({
+            "count": len(results),
+            "page": page,
+            "page_size": page_size,
+            "results": serializer.data,
+        })
+
+
+class RegisterHotelView(APIView):
+    """Register a new hotel (organization + property + owner user)."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from apps.users.models import User
+
+        serializer = RegisterHotelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Generate unique subdomain from hotel name
+        base_slug = slugify(data["hotel_name"])[:50]
+        subdomain = base_slug
+        counter = 1
+        while Organization.objects.filter(subdomain=subdomain).exists():
+            subdomain = f"{base_slug}-{counter}"
+            counter += 1
+
+        with transaction.atomic():
+            # 1. Create Organization
+            org = Organization.objects.create(
+                name=data["hotel_name"],
+                subdomain=subdomain,
+                currency="PEN",
+                plan="starter",
+            )
+
+            # 2. Create Property
+            prop_slug = slugify(data["hotel_name"])[:100]
+            prop = Property.objects.create(
+                organization=org,
+                name=data["hotel_name"],
+                slug=prop_slug,
+                city=data.get("city", ""),
+                country=data.get("country", "PE"),
+            )
+
+            # 3. Create owner User
+            name_parts = data["owner_name"].split(" ", 1)
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+            user = User.objects.create_user(
+                email=data["owner_email"],
+                password=data["owner_password"],
+                first_name=first_name,
+                last_name=last_name,
+                role=User.Role.OWNER,
+                organization=org,
+            )
+            user.properties.add(prop)
+
+        # 4. Send welcome email (best-effort)
+        try:
+            import resend
+            resend.api_key = settings.RESEND_API_KEY
+            if settings.RESEND_API_KEY:
+                resend.Emails.send({
+                    "from": settings.RESEND_FROM_EMAIL,
+                    "to": [data["owner_email"]],
+                    "subject": f"Bienvenido a Lervi — {data['hotel_name']}",
+                    "html": f"""
+                        <h2>¡Bienvenido a Lervi!</h2>
+                        <p>Hola {first_name},</p>
+                        <p>Tu hotel <strong>{data['hotel_name']}</strong> ya está registrado.</p>
+                        <p>Accede a tu panel de administración:</p>
+                        <p><a href="https://admin.lervi.io">admin.lervi.io</a></p>
+                        <p>Tu subdominio: <strong>{subdomain}.lervi.io</strong></p>
+                        <br>
+                        <p>— El equipo de Lervi</p>
+                    """,
+                })
+        except Exception as exc:
+            logger.warning("Welcome email failed: %s", exc)
+
+        return Response({
+            "organization_subdomain": subdomain,
+            "admin_url": "https://admin.lervi.io",
+            "message": f"Hotel '{data['hotel_name']}' creado exitosamente.",
+        }, status=status.HTTP_201_CREATED)
+
+
+class ContactView(APIView):
+    """Public contact form — sends email and logs."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ContactSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Send email (best-effort)
+        try:
+            import resend
+            resend.api_key = settings.RESEND_API_KEY
+            if settings.RESEND_API_KEY:
+                resend.Emails.send({
+                    "from": settings.RESEND_FROM_EMAIL,
+                    "to": [settings.RESEND_FROM_EMAIL],
+                    "subject": f"[Lervi Contact] {data['name']}",
+                    "html": f"""
+                        <p><strong>Nombre:</strong> {data['name']}</p>
+                        <p><strong>Email:</strong> {data['email']}</p>
+                        <p><strong>Mensaje:</strong></p>
+                        <p>{data['message']}</p>
+                    """,
+                })
+        except Exception as exc:
+            logger.warning("Contact email failed: %s", exc)
+
+        logger.info("Contact form: name=%s email=%s", data["name"], data["email"])
+
+        return Response(
+            {"message": "Mensaje enviado. Nos pondremos en contacto pronto."},
+            status=status.HTTP_200_OK,
+        )

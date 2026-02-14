@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const plans = [
   {
     name: 'Starter',
@@ -12,6 +14,7 @@ const plans = [
       'Soporte por email',
     ],
     cta: 'Empezar gratis',
+    href: '/registro',
     highlighted: false,
   },
   {
@@ -29,6 +32,7 @@ const plans = [
       'Soporte prioritario',
     ],
     cta: 'Empezar prueba gratis',
+    href: '/registro',
     highlighted: true,
   },
   {
@@ -45,6 +49,7 @@ const plans = [
       'Soporte 24/7',
     ],
     cta: 'Contactar ventas',
+    href: '/registro',
     highlighted: false,
   },
 ]
@@ -98,8 +103,8 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <a
-                href="#contact"
+              <Link
+                to={plan.href}
                 className={`block text-center py-3 rounded-xl font-semibold text-sm transition ${
                   plan.highlighted
                     ? 'bg-white text-indigo-600 hover:bg-indigo-50'
@@ -107,7 +112,7 @@ export default function Pricing() {
                 }`}
               >
                 {plan.cta}
-              </a>
+              </Link>
             </div>
           ))}
         </div>

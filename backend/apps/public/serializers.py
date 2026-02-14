@@ -319,3 +319,43 @@ class GroupReservationConfirmationSerializer(serializers.Serializer):
     reservations = ReservationConfirmationSerializer(many=True)
     total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     currency = serializers.CharField()
+
+
+class PublicHotelListSerializer(serializers.Serializer):
+    """Serializer for hotel search results."""
+    org_name = serializers.CharField()
+    subdomain = serializers.CharField()
+    logo = serializers.URLField(allow_blank=True)
+    theme_template = serializers.CharField()
+    property_name = serializers.CharField()
+    city = serializers.CharField()
+    country = serializers.CharField()
+    stars = serializers.IntegerField(allow_null=True)
+    hero_image = serializers.ImageField(allow_null=True)
+    tagline = serializers.CharField(allow_blank=True)
+    amenities = serializers.ListField()
+    min_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+
+
+class RegisterHotelSerializer(serializers.Serializer):
+    """Serializer for hotel registration."""
+    hotel_name = serializers.CharField(max_length=255)
+    owner_name = serializers.CharField(max_length=255)
+    owner_email = serializers.EmailField()
+    owner_password = serializers.CharField(min_length=8, write_only=True)
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
+    city = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    country = serializers.CharField(max_length=100, default="PE")
+
+    def validate_owner_email(self, value):
+        from apps.users.models import User
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Ya existe una cuenta con este email.")
+        return value
+
+
+class ContactSerializer(serializers.Serializer):
+    """Serializer for contact form."""
+    name = serializers.CharField(max_length=255)
+    email = serializers.EmailField()
+    message = serializers.CharField(max_length=2000)
