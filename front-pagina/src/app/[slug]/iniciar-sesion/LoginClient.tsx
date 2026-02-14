@@ -3,9 +3,16 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { guestLogin, guestRegister } from "@/lib/api";
+import {
+  guestLogin,
+  guestRegister,
+  guestLookup,
+  guestRequestOtp,
+  guestActivate,
+} from "@/lib/api";
 import { setGuestSession } from "@/lib/guest-auth";
 import { COUNTRY_PHONE_CODES, getDialCode } from "@/lib/phone-codes";
+import type { GuestLookupResponse } from "@/lib/types";
 
 interface Props {
   slug: string;
@@ -35,7 +42,7 @@ const NATIONALITIES = [
   { value: "FR", label: "Francesa" },
   { value: "DE", label: "Alemana" },
   { value: "IT", label: "Italiana" },
-  { value: "GB", label: "Británica" },
+  { value: "GB", label: "Britanica" },
   { value: "JP", label: "Japonesa" },
   { value: "CN", label: "China" },
   { value: "KR", label: "Coreana" },
@@ -43,21 +50,24 @@ const NATIONALITIES = [
   { value: "OTHER", label: "Otra" },
 ];
 
-type Tab = "login" | "register";
+type Step = "lookup" | "login" | "register" | "otp" | "activate";
 
 export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next") || "/mis-reservas";
 
-  const [tab, setTab] = useState<Tab>("login");
+  const [step, setStep] = useState<Step>("lookup");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Login fields
-  const [loginDocType, setLoginDocType] = useState("");
-  const [loginDocNumber, setLoginDocNumber] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  // Document fields (shared across steps)
+  const [docType, setDocType] = useState("");
+  const [docNumber, setDocNumber] = useState("");
+
+  // Login field
+  const [password, setPassword] = useState("");
 
   // Register fields
   const [firstName, setFirstName] = useState("");
@@ -65,17 +75,55 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const [email, setEmail] = useState("");
   const [phoneCountry, setPhoneCountry] = useState(defaultCountry);
   const [phone, setPhone] = useState("");
-  const [documentType, setDocumentType] = useState("");
-  const [documentNumber, setDocumentNumber] = useState("");
   const [nationality, setNationality] = useState("");
-  const [password, setPassword] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+
+  // OTP / Activate fields
+  const [otpCode, setOtpCode] = useState("");
+  const [actFirstName, setActFirstName] = useState("");
+  const [actLastName, setActLastName] = useState("");
+  const [actEmail, setActEmail] = useState("");
+  const [actPhone, setActPhone] = useState("");
+  const [actPhoneCountry, setActPhoneCountry] = useState(defaultCountry);
+  const [actNationality, setActNationality] = useState("");
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+    setSubmitting(true);
+    try {
+      const result: GuestLookupResponse = await guestLookup(slug, docType, docNumber);
+      switch (result.status) {
+        case "login":
+          setStep("login");
+          setInfo("Encontramos una cuenta asociada a este documento.");
+          break;
+        case "register":
+          setStep("register");
+          break;
+        case "recognized":
+          setStep("otp");
+          setInfo("Encontramos una cuenta asociada a este documento. Verifique su identidad con un codigo enviado a su email.");
+          break;
+        case "new":
+        default:
+          setStep("register");
+          break;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al buscar cuenta");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      const session = await guestLogin(slug, loginDocType, loginDocNumber, loginPassword);
+      const session = await guestLogin(slug, docType, docNumber, password);
       setGuestSession(session);
       router.push(nextUrl);
     } catch (err) {
@@ -96,10 +144,10 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
         last_name: lastName,
         email,
         phone: fullPhone,
-        document_type: documentType,
-        document_number: documentNumber,
+        document_type: docType,
+        document_number: docNumber,
         nationality,
-        password,
+        password: regPassword,
       });
       setGuestSession(session);
       router.push(nextUrl);
@@ -108,6 +156,68 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleRequestOtp = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      await guestRequestOtp(slug, docType, docNumber);
+      setInfo("Codigo enviado a su email.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al solicitar codigo");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleActivate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const fullPhone = actPhone ? `${getDialCode(actPhoneCountry)} ${actPhone}` : "";
+      const session = await guestActivate(slug, {
+        document_type: docType,
+        document_number: docNumber,
+        code: otpCode,
+        first_name: actFirstName,
+        last_name: actLastName,
+        email: actEmail,
+        phone: fullPhone,
+        nationality: actNationality,
+      });
+      setGuestSession(session);
+      router.push(nextUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al activar cuenta");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const goBack = () => {
+    setStep("lookup");
+    setError(null);
+    setInfo(null);
+    setPassword("");
+    setOtpCode("");
+  };
+
+  const stepTitle: Record<Step, string> = {
+    lookup: "Acceder a mi cuenta",
+    login: "Iniciar Sesion",
+    register: "Crear Cuenta",
+    otp: "Verificar Identidad",
+    activate: "Completar Registro",
+  };
+
+  const stepSubtitle: Record<Step, string> = {
+    lookup: "Ingrese su documento para continuar",
+    login: "Ingrese su contraseña",
+    register: "Complete sus datos para crear su cuenta",
+    otp: "Solicite y verifique el codigo enviado a su email",
+    activate: "Complete sus datos para activar su cuenta",
   };
 
   const spinner = (
@@ -122,12 +232,10 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
       <section className="bg-primary-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="font-serif text-4xl text-white mb-3">
-            {tab === "login" ? "Iniciar Sesion" : "Crear Cuenta"}
+            {stepTitle[step]}
           </h1>
           <p className="text-white/70 text-lg">
-            {tab === "login"
-              ? "Ingrese con su documento y contraseña"
-              : "Complete sus datos para crear su cuenta"}
+            {stepSubtitle[step]}
           </p>
         </div>
       </section>
@@ -135,36 +243,26 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
       <section className="py-12 bg-sand-50 min-h-[60vh]">
         <div className="max-w-md mx-auto px-4 sm:px-6">
           <div className="bg-white rounded-lg border border-sand-200 p-8">
-            {/* Tabs */}
-            <div className="flex border-b border-sand-200 mb-6">
-              <button
-                onClick={() => { setTab("login"); setError(null); }}
-                className={`pb-3 px-4 text-sm font-sans font-medium border-b-2 transition-colors flex-1 ${tab === "login" ? "border-accent-500 text-primary-900" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-              >
-                Iniciar sesion
-              </button>
-              <button
-                onClick={() => { setTab("register"); setError(null); }}
-                className={`pb-3 px-4 text-sm font-sans font-medium border-b-2 transition-colors flex-1 ${tab === "register" ? "border-accent-500 text-primary-900" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-              >
-                Crear cuenta
-              </button>
-            </div>
-
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm mb-5">
                 {error}
               </div>
             )}
 
-            {/* LOGIN TAB */}
-            {tab === "login" && (
-              <form onSubmit={handleLogin} className="space-y-5">
+            {info && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded-lg p-4 text-sm mb-5">
+                {info}
+              </div>
+            )}
+
+            {/* STEP: LOOKUP */}
+            {step === "lookup" && (
+              <form onSubmit={handleLookup} className="space-y-5">
                 <div>
                   <label className="label-field">Tipo de documento</label>
                   <select
-                    value={loginDocType}
-                    onChange={(e) => setLoginDocType(e.target.value)}
+                    value={docType}
+                    onChange={(e) => setDocType(e.target.value)}
                     required
                     className="input-field"
                   >
@@ -179,29 +277,50 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                   <label className="label-field">Numero de documento</label>
                   <input
                     type="text"
-                    value={loginDocNumber}
-                    onChange={(e) => setLoginDocNumber(e.target.value)}
+                    value={docNumber}
+                    onChange={(e) => setDocNumber(e.target.value)}
                     required
                     placeholder="Ej: 12345678"
                     className="input-field"
                   />
                 </div>
 
+                <button
+                  type="submit"
+                  disabled={submitting || !docType || !docNumber}
+                  className="btn-primary w-full disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      {spinner} Buscando...
+                    </span>
+                  ) : "Continuar"}
+                </button>
+              </form>
+            )}
+
+            {/* STEP: LOGIN */}
+            {step === "login" && (
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="bg-sand-50 rounded-lg p-3 text-sm text-gray-600">
+                  <span className="font-medium">{DOCUMENT_TYPES.find(d => d.value === docType)?.label}:</span> {docNumber}
+                </div>
+
                 <div>
                   <label className="label-field">Contraseña</label>
                   <input
                     type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="••••••"
+                    placeholder="Ingrese su contraseña"
                     className="input-field"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={submitting || !loginDocType || !loginDocNumber || !loginPassword}
+                  disabled={submitting || !password}
                   className="btn-primary w-full disabled:opacity-50"
                 >
                   {submitting ? (
@@ -210,12 +329,24 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                     </span>
                   ) : "Ingresar"}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Usar otro documento
+                </button>
               </form>
             )}
 
-            {/* REGISTER TAB */}
-            {tab === "register" && (
+            {/* STEP: REGISTER */}
+            {step === "register" && (
               <form onSubmit={handleRegister} className="space-y-5">
+                <div className="bg-sand-50 rounded-lg p-3 text-sm text-gray-600">
+                  <span className="font-medium">{DOCUMENT_TYPES.find(d => d.value === docType)?.label}:</span> {docNumber}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label-field">Nombre <span className="text-red-400">*</span></label>
@@ -248,30 +379,14 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label-field">Tipo de documento <span className="text-red-400">*</span></label>
-                    <select
-                      required
-                      value={documentType}
-                      onChange={(e) => { setDocumentType(e.target.value); if (e.target.value === "dni") setNationality("PE"); }}
-                      className="input-field"
-                    >
-                      <option value="">Seleccionar</option>
-                      {DOCUMENT_TYPES.map((dt) => (
-                        <option key={dt.value} value={dt.value}>{dt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label-field">N° de documento <span className="text-red-400">*</span></label>
-                    <input type="text" required value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} className="input-field" placeholder="12345678" />
-                  </div>
-                </div>
-
                 <div>
                   <label className="label-field">Nacionalidad <span className="text-red-400">*</span></label>
-                  <select required value={nationality} onChange={(e) => setNationality(e.target.value)} className="input-field">
+                  <select
+                    required
+                    value={nationality}
+                    onChange={(e) => setNationality(e.target.value)}
+                    className="input-field"
+                  >
                     <option value="">Seleccionar nacionalidad</option>
                     {NATIONALITIES.map((n) => (
                       <option key={n.value} value={n.value}>{n.label}</option>
@@ -281,7 +396,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
 
                 <div>
                   <label className="label-field">Contraseña <span className="text-red-400">*</span></label>
-                  <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" placeholder="Minimo 6 caracteres" />
+                  <input type="password" required minLength={6} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="input-field" placeholder="Minimo 6 caracteres" />
                   <p className="text-xs text-gray-400 mt-1">Para acceder a sus reservas en el futuro</p>
                 </div>
 
@@ -291,6 +406,140 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                       {spinner} Registrando...
                     </span>
                   ) : "Crear cuenta"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Usar otro documento
+                </button>
+              </form>
+            )}
+
+            {/* STEP: OTP (request code) */}
+            {step === "otp" && (
+              <div className="space-y-5">
+                <div className="bg-sand-50 rounded-lg p-3 text-sm text-gray-600">
+                  <span className="font-medium">{DOCUMENT_TYPES.find(d => d.value === docType)?.label}:</span> {docNumber}
+                </div>
+
+                <p className="text-sm text-gray-600">
+                  Solicite un codigo de verificacion. Lo enviaremos al email asociado a su cuenta.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={submitting}
+                  className="btn-primary w-full disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      {spinner} Enviando...
+                    </span>
+                  ) : "Enviar codigo"}
+                </button>
+
+                <div>
+                  <label className="label-field">Codigo de verificacion</label>
+                  <input
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="input-field text-center text-2xl tracking-[0.3em]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep("activate"); setError(null); setInfo(null); }}
+                  disabled={otpCode.length !== 6}
+                  className="btn-primary w-full disabled:opacity-50"
+                >
+                  Verificar codigo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Usar otro documento
+                </button>
+              </div>
+            )}
+
+            {/* STEP: ACTIVATE (complete profile after OTP) */}
+            {step === "activate" && (
+              <form onSubmit={handleActivate} className="space-y-5">
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
+                  Complete sus datos para activar su cuenta en este hotel.
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-field">Nombre <span className="text-red-400">*</span></label>
+                    <input type="text" required value={actFirstName} onChange={(e) => setActFirstName(e.target.value)} className="input-field" placeholder="Juan" />
+                  </div>
+                  <div>
+                    <label className="label-field">Apellido <span className="text-red-400">*</span></label>
+                    <input type="text" required value={actLastName} onChange={(e) => setActLastName(e.target.value)} className="input-field" placeholder="Perez" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label-field">Email <span className="text-red-400">*</span></label>
+                  <input type="email" required value={actEmail} onChange={(e) => setActEmail(e.target.value)} className="input-field" placeholder="juan@email.com" />
+                </div>
+
+                <div>
+                  <label className="label-field">Telefono</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={actPhoneCountry}
+                      onChange={(e) => setActPhoneCountry(e.target.value)}
+                      className="input-field w-[120px] flex-shrink-0"
+                    >
+                      {COUNTRY_PHONE_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+                      ))}
+                    </select>
+                    <input type="tel" value={actPhone} onChange={(e) => setActPhone(e.target.value)} className="input-field flex-1" placeholder="999 999 999" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label-field">Nacionalidad</label>
+                  <select
+                    value={actNationality}
+                    onChange={(e) => setActNationality(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Seleccionar nacionalidad</option>
+                    {NATIONALITIES.map((n) => (
+                      <option key={n.value} value={n.value}>{n.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-50">
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      {spinner} Activando...
+                    </span>
+                  ) : "Activar cuenta"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep("otp"); setError(null); }}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Volver
                 </button>
               </form>
             )}

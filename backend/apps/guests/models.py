@@ -27,6 +27,8 @@ class Guest(TenantModel):
     country_of_residence = models.CharField(max_length=100, blank=True, default="")
     password_hash = models.CharField(max_length=128, blank=True, default="")
     is_vip = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    last_login = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["last_name", "first_name"]

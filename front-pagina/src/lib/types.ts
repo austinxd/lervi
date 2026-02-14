@@ -217,6 +217,10 @@ export interface GuestSession {
   guest_id: string;
 }
 
+export interface GuestLookupResponse {
+  status: "new" | "login" | "register" | "recognized";
+}
+
 export interface GuestRegisterRequest {
   first_name: string;
   last_name: string;

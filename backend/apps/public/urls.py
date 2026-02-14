@@ -64,6 +64,21 @@ urlpatterns = [
         name="public-guest-login",
     ),
     path(
+        "<slug:org_slug>/guest/lookup/",
+        views.GuestLookupView.as_view(),
+        name="public-guest-lookup",
+    ),
+    path(
+        "<slug:org_slug>/guest/request-otp/",
+        views.GuestRequestOTPView.as_view(),
+        name="public-guest-request-otp",
+    ),
+    path(
+        "<slug:org_slug>/guest/activate/",
+        views.GuestActivateView.as_view(),
+        name="public-guest-activate",
+    ),
+    path(
         "<slug:org_slug>/guest-profile/",
         views.GuestProfileView.as_view(),
         name="public-guest-profile",

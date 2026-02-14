@@ -3,6 +3,7 @@ import type {
   BankAccount,
   GroupReservationConfirmation,
   GroupReservationRequest,
+  GuestLookupResponse,
   GuestProfile,
   GuestRegisterRequest,
   GuestReservation,
@@ -168,6 +169,71 @@ export async function guestLogin(
   if (!res.ok) {
     const err = await res.json().catch(() => null);
     throw new Error(err?.detail || "Error al iniciar sesión");
+  }
+  return res.json();
+}
+
+export async function guestLookup(
+  slug: string,
+  documentType: string,
+  documentNumber: string
+): Promise<GuestLookupResponse> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest/lookup/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      document_type: documentType,
+      document_number: documentNumber,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al buscar cuenta");
+  }
+  return res.json();
+}
+
+export async function guestRequestOtp(
+  slug: string,
+  documentType: string,
+  documentNumber: string
+): Promise<{ detail: string; retry_after?: number }> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest/request-otp/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      document_type: documentType,
+      document_number: documentNumber,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al solicitar codigo");
+  }
+  return res.json();
+}
+
+export async function guestActivate(
+  slug: string,
+  data: {
+    document_type: string;
+    document_number: string;
+    code: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    nationality?: string;
+  }
+): Promise<GuestSession> {
+  const res = await fetch(`${PUBLIC_API}/${slug}/guest/activate/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Error al activar cuenta");
   }
   return res.json();
 }

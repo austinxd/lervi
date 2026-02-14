@@ -21,13 +21,27 @@ from apps.rooms.models import Room, RoomType
 
 from .permissions import IsAuthenticatedGuest
 from .combinations import find_group_combinations
+from apps.identity.services import (
+    create_identity_link,
+    get_or_create_identity,
+    get_guest_for_identity,
+    has_link_in_org,
+    lookup_identity,
+    request_otp,
+    verify_otp,
+)
+from apps.identity.utils import normalize_document
+
 from .serializers import (
     AvailabilityResultSerializer,
     CombinationResultSerializer,
     GroupReservationConfirmationSerializer,
+    GuestActivateSerializer,
     GuestLoginSerializer,
+    GuestLookupSerializer,
     GuestProfileSerializer,
     GuestRegisterSerializer,
+    GuestRequestOTPSerializer,
     GuestReservationListSerializer,
     OrganizationInfoSerializer,
     PublicBankAccountSerializer,
@@ -710,6 +724,7 @@ class VoucherUploadView(APIView):
 def _generate_guest_token(guest):
     """Generate a JWT token for an authenticated guest."""
     payload = {
+        "type": "guest",
         "guest_id": str(guest.id),
         "organization_id": str(guest.organization_id),
         "guest_name": guest.full_name,
@@ -729,11 +744,13 @@ class GuestRegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        doc_number = normalize_document(data["document_number"])
+
         # 1. Check if a guest with the same document already exists
         existing_by_doc = Guest.objects.filter(
             organization=org,
             document_type=data["document_type"],
-            document_number=data["document_number"],
+            document_number=doc_number,
         ).first()
 
         if existing_by_doc:
@@ -749,6 +766,8 @@ class GuestRegisterView(APIView):
             existing_by_doc.phone = data.get("phone", "")
             existing_by_doc.nationality = data.get("nationality", "")
             existing_by_doc.set_password(data["password"])
+            existing_by_doc.is_verified = True
+            existing_by_doc.last_login = timezone.now()
             existing_by_doc.save()
             guest = existing_by_doc
 
@@ -765,9 +784,11 @@ class GuestRegisterView(APIView):
                 existing_by_email.last_name = data["last_name"]
                 existing_by_email.phone = data.get("phone", "")
                 existing_by_email.document_type = data["document_type"]
-                existing_by_email.document_number = data["document_number"]
+                existing_by_email.document_number = doc_number
                 existing_by_email.nationality = data.get("nationality", "")
                 existing_by_email.set_password(data["password"])
+                existing_by_email.is_verified = True
+                existing_by_email.last_login = timezone.now()
                 existing_by_email.save()
                 guest = existing_by_email
             elif existing_by_email and existing_by_email.has_password:
@@ -784,11 +805,22 @@ class GuestRegisterView(APIView):
                     email=data["email"],
                     phone=data.get("phone", ""),
                     document_type=data["document_type"],
-                    document_number=data["document_number"],
+                    document_number=doc_number,
                     nationality=data.get("nationality", ""),
+                    is_verified=True,
+                    last_login=timezone.now(),
                 )
                 guest.set_password(data["password"])
                 guest.save(update_fields=["password_hash"])
+
+        # Create GlobalIdentity + Link
+        identity = get_or_create_identity(
+            document_type=data["document_type"],
+            document_number=doc_number,
+            email=data["email"],
+            full_name=guest.full_name,
+        )
+        create_identity_link(identity, org, guest)
 
         return Response({
             "access": _generate_guest_token(guest),
@@ -807,10 +839,12 @@ class GuestLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        doc_number = normalize_document(data["document_number"])
+
         guest = Guest.objects.filter(
             organization=org,
             document_type=data["document_type"],
-            document_number=data["document_number"],
+            document_number=doc_number,
         ).first()
 
         if not guest:
@@ -831,11 +865,131 @@ class GuestLoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        guest.last_login = timezone.now()
+        guest.save(update_fields=["last_login"])
+
         return Response({
             "access": _generate_guest_token(guest),
             "guest_name": guest.full_name,
             "guest_id": str(guest.id),
         })
+
+
+class GuestLookupView(APIView):
+    """Lookup: check if a document has an existing identity."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = GuestLookupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        doc_number = normalize_document(data["document_number"])
+        identity, exists = lookup_identity(data["document_type"], doc_number)
+
+        if not exists:
+            return Response({"status": "new"})
+
+        # Check if there's already a guest linked in this org
+        if has_link_in_org(identity, org):
+            guest = get_guest_for_identity(identity, org)
+            if guest and guest.has_password:
+                return Response({"status": "login"})
+            # Guest exists but no password (e.g. from a reservation)
+            return Response({"status": "register"})
+
+        # Identity exists globally but not in this org — recognized cross-hotel
+        return Response({"status": "recognized"})
+
+
+class GuestRequestOTPView(APIView):
+    """Request an OTP code for identity verification."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        get_organization(org_slug)  # validate org exists
+        serializer = GuestRequestOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        doc_number = normalize_document(data["document_number"])
+        identity, exists = lookup_identity(data["document_type"], doc_number)
+
+        if not exists:
+            return Response(
+                {"detail": "Identidad no encontrada. Registrese primero."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        result = request_otp(identity)
+        if "error" in result:
+            return Response(
+                {"detail": result["error"], "retry_after": result.get("retry_after")},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        return Response({"detail": "Codigo enviado a su email."})
+
+
+class GuestActivateView(APIView):
+    """Activate a guest in a new org using OTP verification."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, org_slug):
+        org = get_organization(org_slug)
+        serializer = GuestActivateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        doc_number = normalize_document(data["document_number"])
+        identity, exists = lookup_identity(data["document_type"], doc_number)
+
+        if not exists:
+            return Response(
+                {"detail": "Identidad no encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Verify OTP
+        if not verify_otp(identity, data["code"]):
+            return Response(
+                {"detail": "Codigo invalido o expirado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get or create Guest in this org
+        guest, created = Guest.objects.get_or_create(
+            organization=org,
+            document_type=data["document_type"],
+            document_number=doc_number,
+            defaults={
+                "first_name": data["first_name"],
+                "last_name": data["last_name"],
+                "email": data["email"],
+                "phone": data.get("phone", ""),
+                "nationality": data.get("nationality", ""),
+                "is_verified": True,
+                "last_login": timezone.now(),
+            },
+        )
+        if not created:
+            guest.is_verified = True
+            guest.last_login = timezone.now()
+            guest.save(update_fields=["is_verified", "last_login"])
+
+        # Create link
+        create_identity_link(identity, org, guest)
+
+        # Update identity last_seen
+        identity.last_seen_at = timezone.now()
+        identity.save(update_fields=["last_seen_at"])
+
+        return Response({
+            "access": _generate_guest_token(guest),
+            "guest_name": guest.full_name,
+            "guest_id": str(guest.id),
+        }, status=status.HTTP_201_CREATED)
 
 
 class GuestProfileView(APIView):

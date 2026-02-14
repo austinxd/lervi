@@ -1,0 +1,35 @@
+import logging
+
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+
+def send_otp_email(to_email: str, code: str):
+    """Send an OTP verification email using Resend."""
+    try:
+        import resend
+
+        resend.api_key = settings.RESEND_API_KEY
+
+        resend.Emails.send({
+            "from": settings.RESEND_FROM_EMAIL,
+            "to": [to_email],
+            "subject": "Tu codigo de verificacion",
+            "html": (
+                f"<div style='font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>"
+                f"<h2 style='color: #1a1a2e;'>Codigo de verificacion</h2>"
+                f"<p>Usa el siguiente codigo para verificar tu identidad:</p>"
+                f"<div style='background: #f5f5f5; padding: 20px; text-align: center; "
+                f"border-radius: 8px; margin: 20px 0;'>"
+                f"<span style='font-size: 32px; font-weight: bold; letter-spacing: 6px; "
+                f"color: #1a1a2e;'>{code}</span>"
+                f"</div>"
+                f"<p style='color: #666; font-size: 14px;'>Este codigo expira en 10 minutos.</p>"
+                f"<p style='color: #999; font-size: 12px;'>Si no solicitaste este codigo, "
+                f"puedes ignorar este mensaje.</p>"
+                f"</div>"
+            ),
+        })
+    except Exception:
+        logger.exception("Failed to send OTP email to %s", to_email)

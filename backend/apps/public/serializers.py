@@ -212,6 +212,27 @@ class ReservationConfirmationSerializer(serializers.Serializer):
     has_bank_accounts = serializers.BooleanField(required=False, default=False)
 
 
+class GuestLookupSerializer(serializers.Serializer):
+    document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
+    document_number = serializers.CharField(max_length=50)
+
+
+class GuestRequestOTPSerializer(serializers.Serializer):
+    document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
+    document_number = serializers.CharField(max_length=50)
+
+
+class GuestActivateSerializer(serializers.Serializer):
+    document_type = serializers.ChoiceField(choices=Guest.DocumentType.choices)
+    document_number = serializers.CharField(max_length=50)
+    code = serializers.CharField(max_length=6)
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
+    nationality = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+
+
 class GuestRegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)

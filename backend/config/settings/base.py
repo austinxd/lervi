@@ -45,6 +45,7 @@ LOCAL_APPS = [
     "apps.dashboard",
     "apps.public",
     "apps.billing",
+    "apps.identity",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -164,6 +165,14 @@ SIMPLE_JWT = {
 
 # ---------- CORS ----------
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+
+# ---------- Identity / OTP ----------
+IDENTITY_ENCRYPTION_KEY = env("IDENTITY_ENCRYPTION_KEY", default="")
+RESEND_API_KEY = env("RESEND_API_KEY", default="")
+RESEND_FROM_EMAIL = env("RESEND_FROM_EMAIL", default="noreply@lervi.com")
+OTP_COOLDOWN_SECONDS = 60
+OTP_MAX_PER_HOUR = 5
+OTP_LIFETIME_MINUTES = 10
 
 # ---------- drf-spectacular ----------
 SPECTACULAR_SETTINGS = {
