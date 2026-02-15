@@ -9,7 +9,7 @@ interface InfoSectionProps {
 export default function InfoSection({ property, template }: InfoSectionProps) {
   if (template === "premium") {
     return (
-      <section className="py-24 sm:py-32 border-t border-sand-200">
+      <section className="py-24 sm:py-32 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -23,7 +23,7 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16">
               {/* Check-in */}
               <div className="text-center group">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-[0.625rem] bg-accent-50/50 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
                     className="w-6 h-6 text-accent-600"
                     fill="none"
@@ -48,7 +48,7 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
 
               {/* Check-out */}
               <div className="text-center group">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-[0.625rem] bg-accent-50/50 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
                     className="w-6 h-6 text-accent-600"
                     fill="none"
@@ -73,7 +73,7 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
 
               {/* Location */}
               <div className="text-center group">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-[0.625rem] bg-accent-50/50 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
                     className="w-6 h-6 text-accent-600"
                     fill="none"

@@ -34,13 +34,13 @@ export default function AmenitiesSection({ amenities, template }: AmenitiesSecti
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-8">
             {amenities.map((amenity, i) => (
               <ScrollReveal key={amenity} delay={60 * i}>
-                <div className="group amenity-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 rounded-[0.625rem] border border-[#eee]">
-                  <div className="w-11 h-11 mx-auto mb-4 rounded-full bg-accent-50 flex items-center justify-center group-hover:bg-accent-100 transition-colors duration-300">
+                <div className="group text-center transition-all duration-300">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-[0.625rem] bg-accent-50/50 flex items-center justify-center group-hover:bg-accent-100 transition-colors duration-300">
                     <svg
-                      className="w-5 h-5 text-accent-600"
+                      className="w-6 h-6 text-accent-600"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -53,7 +53,7 @@ export default function AmenitiesSection({ amenities, template }: AmenitiesSecti
                       />
                     </svg>
                   </div>
-                  <p className="text-[0.8rem] font-sans text-primary-800 font-medium leading-snug">
+                  <p className="text-sm font-sans text-gray-700 font-medium leading-snug">
                     {amenity}
                   </p>
                 </div>
