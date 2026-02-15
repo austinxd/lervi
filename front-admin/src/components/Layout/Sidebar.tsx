@@ -66,7 +66,7 @@ export default function Sidebar({ mobileOpen, onClose }: Props) {
     <>
       <Toolbar>
         <Typography variant="h6" fontWeight={700} color="primary">
-          Austin OS
+          Lervi
         </Typography>
       </Toolbar>
       <Divider />

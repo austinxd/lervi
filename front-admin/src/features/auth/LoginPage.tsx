@@ -31,7 +31,7 @@ export default function LoginPage() {
       <Card sx={{ width: 400, maxWidth: '90vw' }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h5" fontWeight={700} textAlign="center" mb={1}>
-            Austin OS
+            Lervi
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>
             Panel de administración

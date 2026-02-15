@@ -24,7 +24,7 @@ function getTitle(pathname: string): string {
     if (path === '/' && pathname === '/') return title;
     if (path !== '/' && pathname.startsWith(path)) return title;
   }
-  return 'Austin OS';
+  return 'Lervi';
 }
 
 export default function MainLayout() {

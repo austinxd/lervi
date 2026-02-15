@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Reservas",
-  description: "Sistema de reservas hoteleras - Powered by Austin OS",
+  description: "Sistema de reservas hoteleras - Powered by Lervi",
 };
 
 export default function RootLayout({

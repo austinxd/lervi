@@ -224,7 +224,7 @@ export default function Footer({ org }: FooterProps) {
           </p>
           <p className="text-xs text-white/25">
             Powered by{" "}
-            <span className="text-accent-500/60">Austin OS</span>
+            <span className="text-accent-500/60">Lervi</span>
           </p>
         </div>
       </div>
