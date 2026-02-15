@@ -85,7 +85,8 @@ export default function WebFunnelSection() {
             </Alert>
           ) : (
             <>
-              <Box sx={{ mb: 3 }}>
+              {/* KPI bridge cards — full width */}
+              <Box sx={{ mb: 2 }}>
                 <KpiBridgeCards
                   totalReservations={data.kpi_bridge.total_reservations}
                   webReservations={data.kpi_bridge.web_reservations}
@@ -93,57 +94,58 @@ export default function WebFunnelSection() {
                 />
               </Box>
 
-              {/* KPI Tasa de conversión web */}
-              <Card sx={{ mb: 3, borderLeft: '4px solid #2E7D32' }}>
-                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box>
-                    <Typography variant="h3" fontWeight={800} color="#2E7D32">
-                      {conversionRate}{conversionRate !== '—' ? '%' : ''}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tasa de conversion web
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
               {tier === 'collecting' && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                   Recolectando datos suficientes para analisis. Se necesitan al menos 30 sesiones para generar insights confiables.
                 </Alert>
               )}
 
-              {/* Intención del usuario: funnel + insights */}
+              {/* Side-by-side: funnel left, KPIs + insights right */}
               <Grid container spacing={2}>
-                <Grid item xs={12} md={tier === 'collecting' ? 12 : 7}>
+                {/* Left column: funnel chart */}
+                <Grid item xs={12} md={5}>
                   <FunnelChart
                     funnel={data.funnel}
                     placeholder={tier === 'collecting'}
                     periodLabel={PERIOD_OPTIONS.find((o) => o.value === period)?.label}
                   />
                 </Grid>
-                {tier !== 'collecting' && (
-                  <Grid item xs={12} md={5}>
-                    <InsightsPanel
-                      mainAbandonmentStep={data.insights.main_abandonment_step}
-                      mainAbandonmentDropPct={data.insights.main_abandonment_drop_pct}
-                      currentConversionRate={data.insights.current_conversion_rate}
-                      prevConversionRate={data.insights.prev_conversion_rate}
-                      wowChange={data.insights.wow_change}
-                      tier={tier}
-                    />
-                  </Grid>
-                )}
+
+                {/* Right column: conversion KPI + insights + friction */}
+                <Grid item xs={12} md={7}>
+                  {/* Conversion rate */}
+                  <Card sx={{ mb: 2, borderLeft: '4px solid #2E7D32' }}>
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                        <Typography variant="h4" fontWeight={800} color="#2E7D32">
+                          {conversionRate}{conversionRate !== '—' ? '%' : ''}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tasa de conversion web
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {tier !== 'collecting' && (
+                    <>
+                      <Box sx={{ mb: 2 }}>
+                        <InsightsPanel
+                          mainAbandonmentStep={data.insights.main_abandonment_step}
+                          mainAbandonmentDropPct={data.insights.main_abandonment_drop_pct}
+                          currentConversionRate={data.insights.current_conversion_rate}
+                          prevConversionRate={data.insights.prev_conversion_rate}
+                          wowChange={data.insights.wow_change}
+                          tier={tier}
+                        />
+                      </Box>
+                      <CheckoutFrictionPanel friction={data.checkout_friction} />
+                    </>
+                  )}
+                </Grid>
               </Grid>
 
-              {/* Fricción del checkout */}
-              {tier !== 'collecting' && (
-                <Box sx={{ mt: 3 }}>
-                  <CheckoutFrictionPanel friction={data.checkout_friction} />
-                </Box>
-              )}
-
-              {/* Línea de negocio */}
+              {/* Footer */}
               {data.kpi_bridge.total_reservations > 0 && (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                   Reservas web: {data.kpi_bridge.web_reservations} de {data.kpi_bridge.total_reservations} reservas totales ({data.kpi_bridge.pct_direct}%)
