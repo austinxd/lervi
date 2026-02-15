@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { searchAvailability } from "@/lib/api";
 import { track, EVENT_NAMES } from "@/lib/events";
 import PriceBreakdown from "@/components/PriceBreakdown";
@@ -14,17 +14,31 @@ interface Props {
 
 export default function AvailabilityClient({ slug }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const today = new Date().toISOString().split("T")[0];
-  const [checkIn, setCheckIn] = useState(today);
-  const [checkOut, setCheckOut] = useState("");
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const autoSearched = useRef(false);
+  const [checkIn, setCheckIn] = useState(searchParams.get("check_in") || today);
+  const [checkOut, setCheckOut] = useState(searchParams.get("check_out") || "");
+  const [adults, setAdults] = useState(Number(searchParams.get("adults")) || 1);
+  const [children, setChildren] = useState(Number(searchParams.get("children")) || 0);
   const [results, setResults] = useState<AvailabilityResult[]>([]);
   const [combinations, setCombinations] = useState<CombinationResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Auto-search when arriving with URL params (from search bar)
+  useEffect(() => {
+    if (autoSearched.current) return;
+    const urlCheckIn = searchParams.get("check_in");
+    const urlCheckOut = searchParams.get("check_out");
+    if (urlCheckIn && urlCheckOut) {
+      autoSearched.current = true;
+      handleSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async () => {
     if (!checkIn || !checkOut) return;

@@ -291,9 +291,35 @@
   border-radius: 1px;
 }
 
-/* --- Form: rounded --- */
+/* --- Form: rounded, refined borders --- */
 [data-template="premium"] .input-field {
   border-radius: 0.5rem;
+  border-color: #eee;
+}
+[data-template="premium"] .input-field:focus {
+  border-color: rgb(var(--color-accent-500-rgb));
+}
+
+/* --- Availability page: Diamant gradient header --- */
+[data-template="premium"] .bg-primary-900 {
+  background: linear-gradient(45deg, #272535 0%, #1e1c2a 50%, rgb(var(--color-accent-800-rgb)) 100%);
+}
+
+/* --- Result cards: Diamant styling --- */
+[data-template="premium"] .border-sand-200 {
+  border-color: #eee;
+}
+[data-template="premium"] .border-sand-100 {
+  border-color: #f5f5f5;
+}
+[data-template="premium"] .bg-sand-50 {
+  background-color: #fafafa;
+}
+
+/* --- Select/dropdown premium styling --- */
+[data-template="premium"] select {
+  border-radius: 0.5rem;
+  border-color: #eee;
 }
 
 /* Premium animations */

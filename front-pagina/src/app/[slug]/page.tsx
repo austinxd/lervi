@@ -3,6 +3,7 @@ import { resolveTemplateKey } from "@/lib/theme-resolver";
 import HeroEssential from "@/components/heroes/HeroEssential";
 import HeroSignature from "@/components/heroes/HeroSignature";
 import HeroPremium from "@/components/heroes/HeroPremium";
+import BookingSearchBar from "@/components/BookingSearchBar";
 import AboutSection from "@/components/sections/AboutSection";
 import AmenitiesSection from "@/components/sections/AmenitiesSection";
 import GallerySection from "@/components/sections/GallerySection";
@@ -98,6 +99,10 @@ export default async function LandingPage({ params }: Props) {
           photos={property.photos}
           stars={property.stars}
         />
+        {/* Search bar overlapping hero bottom */}
+        <div className="relative z-20 -mt-12">
+          <BookingSearchBar />
+        </div>
         {about}
         {rooms}
         {gallery}

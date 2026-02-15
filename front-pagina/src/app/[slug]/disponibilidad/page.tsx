@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AvailabilityClient from "./AvailabilityClient";
 
 export const metadata: Metadata = {
@@ -12,5 +13,9 @@ interface Props {
 
 export default async function AvailabilityPage({ params }: Props) {
   const { slug } = await params;
-  return <AvailabilityClient slug={slug} />;
+  return (
+    <Suspense>
+      <AvailabilityClient slug={slug} />
+    </Suspense>
+  );
 }

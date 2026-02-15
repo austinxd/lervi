@@ -128,9 +128,9 @@ export default function HeroPremium({
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator — pushed up to leave room for search bar overlay */}
       <div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
+        className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
         style={{ animation: "premiumFadeUp 1s ease-out 1.5s both" }}
       >
         <span className="text-white/40 text-[0.65rem] uppercase tracking-[0.2em] font-sans font-medium">

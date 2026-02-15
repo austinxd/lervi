@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getOrganizationInfo, getRoomTypes } from "@/lib/api";
+import { resolveTemplateKey } from "@/lib/theme-resolver";
 import RoomCard from "@/components/RoomCard";
 
 interface Props {
@@ -21,6 +22,8 @@ export default async function RoomTypesPage({ params }: Props) {
     getOrganizationInfo(slug),
     getRoomTypes(slug),
   ]);
+
+  const template = resolveTemplateKey(org.theme_template);
 
   return (
     <div>
@@ -47,11 +50,13 @@ export default async function RoomTypesPage({ params }: Props) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {roomTypes.map((rt) => (
+            {roomTypes.map((rt, i) => (
               <RoomCard
                 key={rt.id}
                 roomType={rt}
                 currency={org.currency}
+                template={template}
+                index={i}
               />
             ))}
           </div>
