@@ -52,6 +52,7 @@ class Task(TenantModel):
         max_length=20,
         choices=Status.choices,
         default=Status.PENDING,
+        db_index=True,
     )
     due_date = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True, default="")

@@ -17,7 +17,7 @@ export function resolveTemplateKey(raw: string): string {
 
 /**
  * Resolve the full set of CSS variables for an organization's theme.
- * Colors are determined entirely by the template — no custom color overrides.
+ * Uses org.primary_color when set, otherwise falls back to template default.
  */
 export function resolveThemeVariables(org: OrganizationInfo): CSSProperties {
   const templateKey = resolveTemplateKey(org.theme_template);
@@ -25,10 +25,15 @@ export function resolveThemeVariables(org: OrganizationInfo): CSSProperties {
 
   const vars: Record<string, string> = {};
 
-  // Generate all color scales from the template's fixed colors
-  const primaryScale = generateShadeScale(template.primaryColor);
+  // Use org custom color if set, otherwise use template default
+  const primaryColor =
+    org.primary_color && /^#[0-9a-fA-F]{6}$/.test(org.primary_color)
+      ? org.primary_color
+      : template.primaryColor;
+
+  const primaryScale = generateShadeScale(primaryColor);
   const accentScale = generateShadeScale(template.accentColor);
-  const sandScale = generateSandScale(template.primaryColor);
+  const sandScale = generateSandScale(primaryColor);
 
   for (const [shade, rgb] of Object.entries(primaryScale)) {
     vars[`--color-primary-${shade}-rgb`] = rgb;

@@ -105,6 +105,8 @@ export default function Register() {
         phone: form.phone,
         city: form.city,
         country: form.country,
+        primary_color: form.primary_color,
+        template: form.template,
       })
       setSuccess({ subdomain: res.organization_subdomain, message: res.message })
     } catch (err) {

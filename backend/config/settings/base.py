@@ -153,6 +153,20 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "reservation_create": "10/hour",
+        "guest_register": "5/hour",
+        "guest_login": "10/hour",
+        "otp_request": "5/hour",
+        "reniec_lookup": "30/hour",
+        "hotel_register": "3/hour",
+        "contact": "5/hour",
+    },
 }
 
 # ---------- SimpleJWT ----------

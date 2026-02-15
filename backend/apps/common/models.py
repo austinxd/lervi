@@ -18,6 +18,7 @@ class TenantModel(BaseModel):
         "organizations.Organization",
         on_delete=models.CASCADE,
         related_name="%(class)ss",
+        db_index=True,
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

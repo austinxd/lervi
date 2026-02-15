@@ -298,6 +298,7 @@ class AvailabilityView(APIView):
 
 class CreateReservationView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "reservation_create"
 
     def post(self, request, org_slug):
         org = get_organization(org_slug)
@@ -322,114 +323,124 @@ class CreateReservationView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check availability
         active_statuses = [
             Reservation.OperationalStatus.INCOMPLETE,
             Reservation.OperationalStatus.PENDING,
             Reservation.OperationalStatus.CONFIRMED,
             Reservation.OperationalStatus.CHECK_IN,
         ]
-        eligible_room_ids = set(
-            Room.objects.filter(property=prop, room_types=room_type).values_list("id", flat=True)
-        )
-        busy_room_ids = set(
-            Reservation.objects.filter(
+
+        with transaction.atomic():
+            # Lock overlapping reservations to prevent race conditions
+            Reservation.objects.select_for_update().filter(
                 property=prop,
-                room_id__in=eligible_room_ids,
                 operational_status__in=active_statuses,
                 check_in_date__lt=data["check_out_date"],
                 check_out_date__gt=data["check_in_date"],
-            ).values_list("room_id", flat=True)
-        )
-        unassigned_count = Reservation.objects.filter(
-            property=prop,
-            room_type=room_type,
-            room__isnull=True,
-            operational_status__in=active_statuses,
-            check_in_date__lt=data["check_out_date"],
-            check_out_date__gt=data["check_in_date"],
-        ).count()
-        total_rooms = len(eligible_room_ids)
-        available = total_rooms - len(busy_room_ids) - unassigned_count
-        if available <= 0:
-            return Response(
-                {"detail": "No hay disponibilidad para las fechas seleccionadas."},
-                status=status.HTTP_409_CONFLICT,
+            ).exists()
+
+            # Check availability inside the lock
+            eligible_room_ids = set(
+                Room.objects.filter(property=prop, room_types=room_type).values_list("id", flat=True)
             )
+            busy_room_ids = set(
+                Reservation.objects.filter(
+                    property=prop,
+                    room_id__in=eligible_room_ids,
+                    operational_status__in=active_statuses,
+                    check_in_date__lt=data["check_out_date"],
+                    check_out_date__gt=data["check_in_date"],
+                ).values_list("room_id", flat=True)
+            )
+            unassigned_count = Reservation.objects.filter(
+                property=prop,
+                room_type=room_type,
+                room__isnull=True,
+                operational_status__in=active_statuses,
+                check_in_date__lt=data["check_out_date"],
+                check_out_date__gt=data["check_in_date"],
+            ).count()
+            total_rooms = len(eligible_room_ids)
+            available = total_rooms - len(busy_room_ids) - unassigned_count
+            if available <= 0:
+                return Response(
+                    {"detail": "No hay disponibilidad para las fechas seleccionadas."},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
-        # Calculate price
-        nightly_prices = calculate_nightly_prices(
-            property_obj=prop,
-            room_type=room_type,
-            check_in=data["check_in_date"],
-            check_out=data["check_out_date"],
-            promotion_code=data.get("promotion_code") or None,
-            adults=data["adults"],
-            children=data.get("children", 0),
-        )
-        total = calculate_total(nightly_prices)
+            # Calculate price
+            nightly_prices = calculate_nightly_prices(
+                property_obj=prop,
+                room_type=room_type,
+                check_in=data["check_in_date"],
+                check_out=data["check_out_date"],
+                promotion_code=data.get("promotion_code") or None,
+                adults=data["adults"],
+                children=data.get("children", 0),
+            )
+            total = calculate_total(nightly_prices)
 
-        # Get or create guest — prefer document lookup (consistent with
-        # registration/login) and fall back to email for legacy callers.
-        doc_type = data.get("document_type", "")
-        doc_number = data.get("document_number", "")
-        if doc_type and doc_number:
-            guest, _ = Guest.objects.get_or_create(
+            # Get or create guest — prefer document lookup (consistent with
+            # registration/login) and fall back to email for legacy callers.
+            doc_type = data.get("document_type", "")
+            doc_number = data.get("document_number", "")
+            if doc_type and doc_number:
+                guest, _ = Guest.objects.get_or_create(
+                    organization=org,
+                    document_type=doc_type,
+                    document_number=doc_number,
+                    defaults={
+                        "first_name": data["first_name"],
+                        "last_name": data["last_name"],
+                        "email": data["email"],
+                        "phone": data.get("phone", ""),
+                        "nationality": data.get("nationality", ""),
+                    },
+                )
+            else:
+                guest, _ = Guest.objects.get_or_create(
+                    organization=org,
+                    email=data["email"],
+                    defaults={
+                        "first_name": data["first_name"],
+                        "last_name": data["last_name"],
+                        "phone": data.get("phone", ""),
+                        "document_type": doc_type,
+                        "document_number": doc_number,
+                        "nationality": data.get("nationality", ""),
+                    },
+                )
+
+            # Check if property has active bank accounts
+            has_bank_accounts = BankAccount.objects.filter(
+                Q(organization=org, property__isnull=True) | Q(property=prop),
+                is_active=True,
+            ).exists()
+
+            # Set payment deadline if bank accounts exist (1 hour)
+            payment_deadline = None
+            if has_bank_accounts:
+                payment_deadline = timezone.now() + timedelta(hours=1)
+
+            # Create reservation
+            reservation = Reservation.objects.create(
                 organization=org,
-                document_type=doc_type,
-                document_number=doc_number,
-                defaults={
-                    "first_name": data["first_name"],
-                    "last_name": data["last_name"],
-                    "email": data["email"],
-                    "phone": data.get("phone", ""),
-                    "nationality": data.get("nationality", ""),
-                },
+                property=prop,
+                guest=guest,
+                room_type=room_type,
+                check_in_date=data["check_in_date"],
+                check_out_date=data["check_out_date"],
+                adults=data["adults"],
+                children=data.get("children", 0),
+                total_amount=total,
+                currency=org.currency,
+                origin_type=Reservation.OriginType.WEBSITE,
+                origin_metadata={"source": "front-pagina"},
+                special_requests=data.get("special_requests", ""),
+                operational_status=Reservation.OperationalStatus.INCOMPLETE,
+                financial_status=Reservation.FinancialStatus.PENDING_PAYMENT,
+                payment_deadline=payment_deadline,
             )
-        else:
-            guest, _ = Guest.objects.get_or_create(
-                organization=org,
-                email=data["email"],
-                defaults={
-                    "first_name": data["first_name"],
-                    "last_name": data["last_name"],
-                    "phone": data.get("phone", ""),
-                    "document_type": doc_type,
-                    "document_number": doc_number,
-                    "nationality": data.get("nationality", ""),
-                },
-            )
-
-        # Check if property has active bank accounts
-        has_bank_accounts = BankAccount.objects.filter(
-            Q(organization=org, property__isnull=True) | Q(property=prop),
-            is_active=True,
-        ).exists()
-
-        # Set payment deadline if bank accounts exist (1 hour)
-        payment_deadline = None
-        if has_bank_accounts:
-            payment_deadline = timezone.now() + timedelta(hours=1)
-
-        # Create reservation
-        reservation = Reservation.objects.create(
-            organization=org,
-            property=prop,
-            guest=guest,
-            room_type=room_type,
-            check_in_date=data["check_in_date"],
-            check_out_date=data["check_out_date"],
-            adults=data["adults"],
-            children=data.get("children", 0),
-            total_amount=total,
-            currency=org.currency,
-            origin_type=Reservation.OriginType.WEBSITE,
-            origin_metadata={"source": "front-pagina"},
-            special_requests=data.get("special_requests", ""),
-            operational_status=Reservation.OperationalStatus.INCOMPLETE,
-            financial_status=Reservation.FinancialStatus.PENDING_PAYMENT,
-            payment_deadline=payment_deadline,
-        )
 
         result = ReservationConfirmationSerializer({
             "confirmation_code": reservation.confirmation_code,
@@ -743,7 +754,7 @@ def _generate_guest_token(guest):
         "guest_id": str(guest.id),
         "organization_id": str(guest.organization_id),
         "guest_name": guest.full_name,
-        "exp": timezone.now() + timedelta(hours=24),
+        "exp": timezone.now() + timedelta(hours=2),
         "iat": timezone.now(),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
@@ -752,6 +763,7 @@ def _generate_guest_token(guest):
 class GuestRegisterView(APIView):
     """Registro de huésped con contraseña."""
     permission_classes = [AllowAny]
+    throttle_scope = "guest_register"
 
     def post(self, request, org_slug):
         org = get_organization(org_slug)
@@ -869,6 +881,7 @@ class GuestRegisterView(APIView):
 class GuestLoginView(APIView):
     """Login de huésped con documento y contraseña."""
     permission_classes = [AllowAny]
+    throttle_scope = "guest_login"
 
     def post(self, request, org_slug):
         org = get_organization(org_slug)
@@ -1045,6 +1058,7 @@ class GuestLookupView(APIView):
 class GuestRequestOTPView(APIView):
     """Request an OTP code for identity verification."""
     permission_classes = [AllowAny]
+    throttle_scope = "otp_request"
 
     def post(self, request, org_slug):
         org = get_organization(org_slug)
@@ -1357,6 +1371,7 @@ class PublicHotelSearchView(APIView):
 class RegisterHotelView(APIView):
     """Register a new hotel (organization + property + owner user)."""
     permission_classes = [AllowAny]
+    throttle_scope = "hotel_register"
 
     def post(self, request):
         from apps.users.models import User
@@ -1375,12 +1390,16 @@ class RegisterHotelView(APIView):
 
         with transaction.atomic():
             # 1. Create Organization
-            org = Organization.objects.create(
+            org_kwargs = dict(
                 name=data["hotel_name"],
                 subdomain=subdomain,
                 currency="PEN",
                 plan="starter",
+                theme_template=data.get("template", "signature"),
             )
+            if data.get("primary_color"):
+                org_kwargs["primary_color"] = data["primary_color"]
+            org = Organization.objects.create(**org_kwargs)
 
             # 2. Create Property
             prop_slug = slugify(data["hotel_name"])[:100]
@@ -1440,6 +1459,7 @@ class RegisterHotelView(APIView):
 class ContactView(APIView):
     """Public contact form — sends email and logs."""
     permission_classes = [AllowAny]
+    throttle_scope = "contact"
 
     def post(self, request):
         serializer = ContactSerializer(data=request.data)
@@ -1477,6 +1497,7 @@ class PublicReniecLookupView(APIView):
     """Consulta RENIEC pública para autocompletar registro de huéspedes."""
 
     permission_classes = [AllowAny]
+    throttle_scope = "reniec_lookup"
 
     def get(self, request, org_slug):
         dni = request.query_params.get("dni", "")

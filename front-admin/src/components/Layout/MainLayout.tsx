@@ -3,6 +3,7 @@ import { Box, Toolbar } from '@mui/material';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import ErrorBoundary from '../ErrorBoundary';
 
 const TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -37,7 +38,9 @@ export default function MainLayout() {
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, bgcolor: 'background.default', overflow: 'hidden', minWidth: 0 }}>
         <Toolbar />
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </Box>
     </Box>
   );

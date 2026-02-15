@@ -137,6 +137,7 @@ class Room(BaseModel):
         max_length=20,
         choices=Status.choices,
         default=Status.AVAILABLE,
+        db_index=True,
     )
     active_bed_configuration = models.ForeignKey(
         BedConfiguration,

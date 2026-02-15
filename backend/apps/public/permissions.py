@@ -28,7 +28,7 @@ class IsAuthenticatedGuest(BasePermission):
             return False
 
         try:
-            request.guest = Guest.objects.get(id=guest_id)
+            request.guest = Guest.objects.select_related("organization").get(id=guest_id)
         except Guest.DoesNotExist:
             return False
 

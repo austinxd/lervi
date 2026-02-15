@@ -29,7 +29,7 @@ from .serializers import (
 
 class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     queryset = Reservation.objects.select_related(
-        "guest", "property", "room_type", "room",
+        "guest", "property", "room_type", "room", "created_by",
     )
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     search_fields = ["confirmation_code", "guest__first_name", "guest__last_name"]

@@ -75,8 +75,8 @@ class Reservation(TenantModel):
     )
 
     # --- Dates ---
-    check_in_date = models.DateField()
-    check_out_date = models.DateField()
+    check_in_date = models.DateField(db_index=True)
+    check_out_date = models.DateField(db_index=True)
 
     # --- Guests count ---
     adults = models.PositiveSmallIntegerField(default=1)
@@ -91,11 +91,13 @@ class Reservation(TenantModel):
         max_length=20,
         choices=OperationalStatus.choices,
         default=OperationalStatus.INCOMPLETE,
+        db_index=True,
     )
     financial_status = models.CharField(
         max_length=20,
         choices=FinancialStatus.choices,
         default=FinancialStatus.PENDING_PAYMENT,
+        db_index=True,
     )
 
     # --- Origin ---
@@ -121,6 +123,12 @@ class Reservation(TenantModel):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["property", "operational_status", "check_in_date", "check_out_date"],
+                name="res_avail_lookup",
+            ),
+        ]
 
     def __str__(self):
         return f"Reserva {self.confirmation_code} — {self.guest}"

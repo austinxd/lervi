@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar, Box, Button, Card, CardContent, Chip, CircularProgress,
@@ -85,26 +85,27 @@ export default function PropertyDetail() {
   const contentForm = useForm<ContentFormData>();
 
   // Reset forms when property loads
-  const [initialized, setInitialized] = useState(false);
-  if (property && !initialized) {
-    basicForm.reset({
-      name: property.name,
-      address: property.address,
-      city: property.city,
-      country: property.country,
-      check_in_time: property.check_in_time,
-      check_out_time: property.check_out_time,
-      contact_phone: property.contact_phone,
-      contact_email: property.contact_email,
-      whatsapp: property.whatsapp,
-      stars: property.stars ?? '',
-    });
-    contentForm.reset({
-      tagline: property.tagline,
-      description: property.description,
-    });
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (property) {
+      basicForm.reset({
+        name: property.name,
+        address: property.address,
+        city: property.city,
+        country: property.country,
+        check_in_time: property.check_in_time,
+        check_out_time: property.check_out_time,
+        contact_phone: property.contact_phone,
+        contact_email: property.contact_email,
+        whatsapp: property.whatsapp,
+        stars: property.stars ?? '',
+      });
+      contentForm.reset({
+        tagline: property.tagline,
+        description: property.description,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property?.id]);
 
   if (isLoading || !property) {
     return <Box display="flex" justifyContent="center" mt={6}><CircularProgress /></Box>;

@@ -30,6 +30,8 @@ export interface RegisterHotelData {
   phone?: string;
   city?: string;
   country?: string;
+  primary_color?: string;
+  template?: string;
 }
 
 export interface RegisterHotelResponse {

@@ -20,7 +20,7 @@ from .serializers import (
 
 
 class TaskViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
-    queryset = Task.objects.select_related("room", "assigned_to", "property")
+    queryset = Task.objects.select_related("room", "assigned_to", "property", "organization")
     http_method_names = ["get", "post", "patch", "head", "options"]
     filterset_fields = ["status", "task_type", "priority", "property", "assigned_to", "assigned_role"]
 

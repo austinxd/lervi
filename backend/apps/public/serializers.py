@@ -346,6 +346,17 @@ class RegisterHotelSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
     city = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     country = serializers.CharField(max_length=100, default="PE")
+    primary_color = serializers.RegexField(
+        regex=r"^#[0-9a-fA-F]{6}$",
+        max_length=7,
+        required=False,
+        default="",
+    )
+    template = serializers.ChoiceField(
+        choices=["essential", "signature", "premium"],
+        required=False,
+        default="signature",
+    )
 
     def validate_owner_email(self, value):
         from apps.users.models import User
