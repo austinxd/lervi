@@ -33,14 +33,14 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
       "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap",
   },
   premium: {
-    primaryColor: "#0a0a0a",
-    accentColor: "#c4a265",
-    fontHeading: "'Cormorant Garamond', Georgia, serif",
+    primaryColor: "#272535",
+    accentColor: "#c4a676",
+    fontHeading: "'Playfair Display', Georgia, serif",
     fontBody: "'Inter', system-ui, sans-serif",
-    radiusSm: "0",
-    radiusMd: "0.125rem",
-    radiusLg: "0.25rem",
+    radiusSm: "0.375rem",
+    radiusMd: "0.5rem",
+    radiusLg: "0.625rem",
     googleFontsUrl:
-      "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap",
+      "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap",
   },
 };

@@ -30,17 +30,17 @@ export default function AmenitiesSection({ amenities, template }: AmenitiesSecti
             <div className="text-center mb-16">
               <p className="section-subtitle">Servicios</p>
               <h2 className="section-title mb-4">Servicios del Hotel</h2>
-              <div className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto rounded-full" />
+              <div className="divider-gold mx-auto" />
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {amenities.map((amenity, i) => (
               <ScrollReveal key={amenity} delay={60 * i}>
-                <div className="group rounded-xl bg-white/[0.05] border border-white/[0.08] p-6 text-center hover:bg-white/[0.08] hover:border-accent-500/20 transition-all duration-500">
-                  <div className="w-11 h-11 mx-auto mb-4 rounded-full bg-white/[0.08] flex items-center justify-center group-hover:bg-accent-600/20 transition-colors duration-300">
+                <div className="group amenity-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 rounded-[0.625rem] border border-[#eee]">
+                  <div className="w-11 h-11 mx-auto mb-4 rounded-full bg-accent-50 flex items-center justify-center group-hover:bg-accent-100 transition-colors duration-300">
                     <svg
-                      className="w-5 h-5 text-accent-400/80"
+                      className="w-5 h-5 text-accent-600"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -53,7 +53,7 @@ export default function AmenitiesSection({ amenities, template }: AmenitiesSecti
                       />
                     </svg>
                   </div>
-                  <p className="text-[0.8rem] font-sans text-white/60 font-medium leading-snug group-hover:text-white/80 transition-colors duration-300">
+                  <p className="text-[0.8rem] font-sans text-primary-800 font-medium leading-snug">
                     {amenity}
                   </p>
                 </div>

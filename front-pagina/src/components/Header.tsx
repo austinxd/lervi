@@ -38,11 +38,11 @@ const TEMPLATE_STYLES: Record<string, {
   },
   premium: {
     header: "bg-transparent border-b border-white/[0.06]",
-    link: "text-white/60 hover:text-white",
+    link: "text-white/80 hover:text-white",
     name: "text-white tracking-wide group-hover:text-accent-300",
-    mobileMenu: "bg-[#272535]/98 backdrop-blur-xl border-t border-white/[0.08]",
-    mobileLink: "text-white/60 hover:text-white hover:bg-white/5",
-    logoFallbackBg: "bg-accent-600/30",
+    mobileMenu: "bg-white border-t border-gray-100",
+    mobileLink: "text-gray-600 hover:text-gray-900 hover:bg-gray-50",
+    logoFallbackBg: "bg-accent-600",
   },
 };
 
@@ -51,7 +51,17 @@ export default function Header({ propertyName, logo, template = "signature", slu
   const [menuOpen, setMenuOpen] = useState(false);
   const [guestName, setGuestName] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const styles = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.signature;
+  const baseStyles = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.signature;
+
+  // Premium: switch to light header when scrolled past hero
+  const styles = template === "premium" && scrolled
+    ? {
+        ...baseStyles,
+        header: "bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm",
+        link: "text-gray-600 hover:text-gray-900",
+        name: "text-primary-900 tracking-wide group-hover:text-accent-600",
+      }
+    : baseStyles;
 
   useEffect(() => {
     setGuestName(getGuestToken() ? getGuestName() : null);
@@ -73,18 +83,18 @@ export default function Header({ propertyName, logo, template = "signature", slu
     router.push("/");
   };
 
-  const hamburgerColor = template === "essential" ? "text-gray-700" : "text-white";
+  const hamburgerColor = template === "essential" || (template === "premium" && scrolled) ? "text-gray-700" : "text-white";
   const reservasHref = guestName ? "/mis-reservas" : "/iniciar-sesion";
 
   return (
-    <header className={`${template === "premium" && scrolled ? "bg-[#272535]/90 backdrop-blur-xl border-b border-white/[0.1]" : styles.header} sticky top-0 z-50 transition-all duration-500`}>
+    <header className={`${styles.header} sticky top-0 z-50 transition-all duration-500`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3 group">
             {logo ? (
               <img src={logo} alt={propertyName} className="h-10 w-auto object-contain" />
             ) : (
-              <div className={`w-10 h-10 ${template === "premium" ? "rounded-full" : "rounded"} ${styles.logoFallbackBg} flex items-center justify-center`}>
+              <div className={`w-10 h-10 rounded-full ${styles.logoFallbackBg} flex items-center justify-center`}>
                 <span className="text-white font-serif text-lg font-bold">
                   {propertyName.charAt(0)}
                 </span>

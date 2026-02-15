@@ -9,23 +9,23 @@ interface InfoSectionProps {
 export default function InfoSection({ property, template }: InfoSectionProps) {
   if (template === "premium") {
     return (
-      <section className="py-24 sm:py-32">
+      <section className="py-24 sm:py-32 border-t border-sand-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
             <div className="text-center mb-16">
               <p className="section-subtitle">Informacion</p>
               <h2 className="section-title mb-4">Datos del Hotel</h2>
-              <div className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto rounded-full" />
+              <div className="divider-gold mx-auto" />
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={100}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16">
               {/* Check-in */}
-              <div className="group rounded-xl bg-white/[0.05] border border-white/[0.08] p-8 text-center hover:bg-white/[0.08] transition-all duration-500">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-white/[0.08] flex items-center justify-center group-hover:bg-accent-600/20 transition-colors duration-300">
+              <div className="text-center group">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
-                    className="w-6 h-6 text-accent-400/80"
+                    className="w-6 h-6 text-accent-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -38,19 +38,19 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="font-serif text-lg text-white/90 mb-1.5">
+                <h3 className="font-serif text-lg text-primary-900 mb-1.5">
                   Check-in
                 </h3>
-                <p className="text-white/50 font-sans text-sm">
+                <p className="text-gray-500 font-sans text-sm">
                   {property.check_in_time || "14:00"}
                 </p>
               </div>
 
               {/* Check-out */}
-              <div className="group rounded-xl bg-white/[0.05] border border-white/[0.08] p-8 text-center hover:bg-white/[0.08] transition-all duration-500">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-white/[0.08] flex items-center justify-center group-hover:bg-accent-600/20 transition-colors duration-300">
+              <div className="text-center group">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
-                    className="w-6 h-6 text-accent-400/80"
+                    className="w-6 h-6 text-accent-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -63,19 +63,19 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="font-serif text-lg text-white/90 mb-1.5">
+                <h3 className="font-serif text-lg text-primary-900 mb-1.5">
                   Check-out
                 </h3>
-                <p className="text-white/50 font-sans text-sm">
+                <p className="text-gray-500 font-sans text-sm">
                   {property.check_out_time || "12:00"}
                 </p>
               </div>
 
               {/* Location */}
-              <div className="group rounded-xl bg-white/[0.05] border border-white/[0.08] p-8 text-center hover:bg-white/[0.08] transition-all duration-500">
-                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-white/[0.08] flex items-center justify-center group-hover:bg-accent-600/20 transition-colors duration-300">
+              <div className="text-center group">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sand-100 flex items-center justify-center group-hover:bg-accent-50 transition-colors duration-300">
                   <svg
-                    className="w-6 h-6 text-accent-400/80"
+                    className="w-6 h-6 text-accent-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -94,10 +94,10 @@ export default function InfoSection({ property, template }: InfoSectionProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="font-serif text-lg text-white/90 mb-1.5">
+                <h3 className="font-serif text-lg text-primary-900 mb-1.5">
                   Ubicacion
                 </h3>
-                <p className="text-white/50 font-sans text-sm leading-relaxed">
+                <p className="text-gray-500 font-sans text-sm leading-relaxed">
                   {property.address}
                   {property.city && <>, {property.city}</>}
                 </p>

@@ -38,7 +38,7 @@ export default async function LandingPage({ params }: Props) {
 
   // Shared section elements
   const about = property.description ? (
-    <AboutSection key="about" description={property.description} template={template} />
+    <AboutSection key="about" description={property.description} photos={property.photos} propertyName={property.name} template={template} />
   ) : null;
 
   const rooms = (

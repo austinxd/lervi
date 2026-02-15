@@ -22,7 +22,7 @@ export default function RoomsSection({ roomTypes, currency, template }: RoomsSec
           </ScrollReveal>
 
           {roomTypes.length === 0 ? (
-            <p className="text-center text-white/40 font-sans">
+            <p className="text-center text-gray-400 font-sans">
               No hay habitaciones disponibles en este momento.
             </p>
           ) : (

@@ -219,58 +219,21 @@
 }
 
 /* ============================================
-   TEMPLATE: PREMIUM — Warm luxury, Diamant-inspired
-   Dark charcoal base, gold gradients, rounded, inviting
+   TEMPLATE: PREMIUM — Diamant-inspired
+   LIGHT base with dark hero/CTA/footer only.
+   Gold accents (#c4a676), rounded 10px, pill buttons.
    ============================================ */
-
-/* --- Warm dark foundation --- */
-[data-template="premium"] {
-  background-color: #272535 !important;
-  color: rgba(255,255,255,0.7);
-}
-[data-template="premium"] main {
-  background-color: #272535;
-}
 
 /* --- Typography --- */
 [data-template="premium"] .section-title {
-  color: rgba(255,255,255,0.95);
   font-weight: 400;
-  letter-spacing: 0;
 }
 [data-template="premium"] .section-subtitle {
-  color: rgb(var(--color-accent-400-rgb));
+  color: rgb(var(--color-accent-600-rgb));
   font-size: 0.7rem;
   letter-spacing: 0.2em;
   font-weight: 500;
 }
-[data-template="premium"] h1,
-[data-template="premium"] h2,
-[data-template="premium"] h3,
-[data-template="premium"] h4 {
-  color: rgba(255,255,255,0.95);
-}
-[data-template="premium"] p {
-  color: rgba(255,255,255,0.6);
-}
-[data-template="premium"] label {
-  color: rgba(255,255,255,0.6);
-}
-[data-template="premium"] section {
-  border-color: rgba(255,255,255,0.08);
-}
-
-/* --- Tailwind text utility overrides --- */
-[data-template="premium"] main .text-primary-900 { color: rgba(255,255,255,0.95) !important; }
-[data-template="premium"] main .text-primary-800 { color: rgba(255,255,255,0.85) !important; }
-[data-template="premium"] main .text-primary-700 { color: rgba(255,255,255,0.7) !important; }
-[data-template="premium"] main .text-primary-500 { color: rgba(255,255,255,0.6) !important; }
-[data-template="premium"] main .text-gray-800 { color: rgba(255,255,255,0.9) !important; }
-[data-template="premium"] main .text-gray-700 { color: rgba(255,255,255,0.75) !important; }
-[data-template="premium"] main .text-gray-600 { color: rgba(255,255,255,0.6) !important; }
-[data-template="premium"] main .text-gray-500 { color: rgba(255,255,255,0.5) !important; }
-[data-template="premium"] main .text-gray-400 { color: rgba(255,255,255,0.4) !important; }
-[data-template="premium"] main .text-gray-300 { color: rgba(255,255,255,0.3) !important; }
 
 /* --- Buttons: pill gold --- */
 [data-template="premium"] .btn-primary {
@@ -291,34 +254,16 @@
   box-shadow: 0 6px 20px rgb(var(--color-accent-600-rgb) / 0.4);
 }
 
-/* --- Cards: warm dark, rounded --- */
+/* --- Cards: 10px radius, subtle border --- */
 [data-template="premium"] .card-luxury {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 0.75rem;
-  box-shadow: none;
-}
-[data-template="premium"] .card-luxury:hover {
-  background: rgba(255,255,255,0.08);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  transform: translateY(-2px);
+  border-radius: 0.625rem;
+  border: 1px solid #eee;
 }
 
-/* --- Inner-page white cards to dark --- */
-[data-template="premium"] main .bg-white {
-  background-color: rgba(255,255,255,0.05) !important;
-  border-color: rgba(255,255,255,0.1) !important;
-  box-shadow: none !important;
+/* --- Section alt bg: white for subtle alternation --- */
+[data-template="premium"] .section-alt-bg {
+  background-color: #fff;
 }
-
-/* --- Background overrides --- */
-[data-template="premium"] main .bg-sand-50 { background-color: #272535 !important; }
-[data-template="premium"] main .bg-primary-100 { background-color: rgba(255,255,255,0.05) !important; }
-[data-template="premium"] main .bg-primary-900 { background-color: #1e1c2a !important; }
-[data-template="premium"] main .bg-red-50 { background-color: rgba(220,38,38,0.1) !important; }
-[data-template="premium"] main .border-sand-200 { border-color: rgba(255,255,255,0.1) !important; }
-[data-template="premium"] main .border-gray-200 { border-color: rgba(255,255,255,0.1) !important; }
-[data-template="premium"] main .shadow-sm { box-shadow: none !important; }
 
 /* --- Divider: gold gradient --- */
 [data-template="premium"] .divider-gold {
@@ -328,41 +273,9 @@
   border-radius: 1px;
 }
 
-/* --- Form --- */
+/* --- Form: rounded --- */
 [data-template="premium"] .input-field {
   border-radius: 0.5rem;
-  background-color: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.9);
-}
-[data-template="premium"] .input-field option {
-  background-color: #272535;
-  color: rgba(255,255,255,0.9);
-}
-[data-template="premium"] .label-field {
-  color: rgba(255,255,255,0.6);
-}
-
-/* --- Custom classes --- */
-[data-template="premium"] .section-alt-bg {
-  background-color: #211f2c;
-}
-[data-template="premium"] .amenity-card {
-  background-color: rgba(255,255,255,0.05);
-}
-[data-template="premium"] .info-icon-bg {
-  background-color: rgba(255,255,255,0.08);
-}
-[data-template="premium"] .group:hover .info-icon-bg-hover {
-  background-color: rgba(255,255,255,0.14);
-}
-
-/* --- Accent colors stay visible --- */
-[data-template="premium"] main .text-accent-600 {
-  color: rgb(var(--color-accent-400-rgb)) !important;
-}
-[data-template="premium"] main .text-accent-700 {
-  color: rgb(var(--color-accent-500-rgb)) !important;
 }
 
 /* Premium animations */
@@ -433,7 +346,7 @@
 [data-template="essential"] footer .bg-white\/10 { background-color: rgb(229 231 235); }
 
 [data-template="premium"] footer {
-  background-color: #1e1c2a !important;
+  background-color: #272535 !important;
   color: rgba(255,255,255,0.55);
   border-top: none;
 }
@@ -448,21 +361,6 @@
 [data-template="premium"] footer h4 { color: rgba(255,255,255,0.7) !important; font-weight: 500; }
 [data-template="premium"] footer a { color: rgba(255,255,255,0.55); }
 [data-template="premium"] footer a:hover { color: rgb(var(--color-accent-400-rgb)); }
-
-/* Premium: new animations */
-@keyframes premiumLineGrow {
-  0% { width: 0; opacity: 0; }
-  100% { width: 3rem; opacity: 1; }
-}
-
-.animate-premiumPulse {
-  animation: premiumPulse 3s ease-in-out infinite;
-}
-
-@keyframes premiumPulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
 
 @media (prefers-reduced-motion: reduce) {
   [data-template="premium"] * {

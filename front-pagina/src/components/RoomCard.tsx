@@ -15,10 +15,10 @@ export default function RoomCard({
   template = "signature",
   index,
 }: RoomCardProps) {
-  // Premium: Diamant-inspired — rounded, warm, clean layout
+  // Premium: Diamant-inspired — light card, gold accents, rounded
   if (template === "premium") {
     return (
-      <div className="group rounded-xl overflow-hidden bg-white/[0.05] border border-white/[0.08] transition-all duration-500 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1">
+      <div className="group card-luxury">
         {/* Image */}
         <div className="relative h-56 sm:h-64 overflow-hidden">
           {roomType.cover_photo ? (
@@ -28,7 +28,7 @@ export default function RoomCard({
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-white/[0.06] to-white/[0.02]" />
+            <div className="w-full h-full bg-gradient-to-br from-sand-100 to-sand-200" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           {/* Price badge */}
@@ -42,15 +42,15 @@ export default function RoomCard({
 
         {/* Content */}
         <div className="p-6">
-          <h3 className="font-serif text-xl text-white/95 mb-3 group-hover:text-accent-300 transition-colors">
+          <h3 className="font-serif text-xl text-primary-900 mb-3 group-hover:text-accent-700 transition-colors">
             {roomType.name}
           </h3>
 
           {/* Specs row */}
-          <div className="flex items-center gap-3 text-xs text-white/50 font-sans mb-4 flex-wrap">
+          <div className="flex items-center gap-3 text-xs text-gray-500 font-sans mb-4 flex-wrap">
             {roomType.max_adults && (
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-accent-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" />
                 </svg>
                 {roomType.max_adults} huespedes
@@ -58,7 +58,7 @@ export default function RoomCard({
             )}
             {roomType.size_sqm && (
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-accent-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                 </svg>
                 {roomType.size_sqm} m²
@@ -70,14 +70,14 @@ export default function RoomCard({
           </div>
 
           {roomType.description && (
-            <p className="text-sm text-white/40 mb-5 line-clamp-2 leading-relaxed font-sans">
+            <p className="text-sm text-gray-500 mb-5 line-clamp-2 leading-relaxed font-sans">
               {roomType.description}
             </p>
           )}
 
           <Link
             href={`/habitaciones/${roomType.id}`}
-            className="inline-flex items-center gap-2 text-accent-400 hover:text-accent-300 text-sm font-medium font-sans transition-colors"
+            className="inline-flex items-center gap-2 text-accent-600 hover:text-accent-700 text-sm font-medium font-sans transition-colors"
           >
             Ver detalle
             <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">

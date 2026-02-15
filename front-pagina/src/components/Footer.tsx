@@ -18,10 +18,10 @@ export default function Footer({ org, template }: FooterProps) {
   const property = org.properties[0];
 
   return (
-    <footer className={`bg-primary-900 ${template === "premium" ? "text-white/50" : "text-white/70"}`}>
+    <footer className={`bg-primary-900 ${template === "premium" ? "text-white/55" : "text-white/70"}`}>
       {/* Premium gold rule */}
       {template === "premium" && (
-        <div className="h-0.5 bg-gradient-to-r from-transparent via-accent-500/30 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-accent-500/40 to-transparent" />
       )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main grid */}

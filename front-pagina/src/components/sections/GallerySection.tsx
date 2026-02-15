@@ -21,14 +21,14 @@ export default function GallerySection({ photos, propertyName, template }: Galle
             <div className="text-center mb-16">
               <p className="section-subtitle">Galeria</p>
               <h2 className="section-title mb-4">Nuestro Hotel</h2>
-              <div className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto rounded-full" />
+              <div className="divider-gold mx-auto" />
             </div>
           </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Featured */}
             <ScrollReveal className="sm:col-span-2 lg:col-span-2 lg:row-span-2">
-              <div className="relative rounded-xl overflow-hidden group h-full">
+              <div className="relative rounded-[0.625rem] overflow-hidden group h-full">
                 <div className="aspect-[16/10] lg:aspect-auto lg:h-full min-h-[20rem]">
                   <img
                     src={featured.image}
@@ -47,7 +47,7 @@ export default function GallerySection({ photos, propertyName, template }: Galle
 
             {rest.map((photo, i) => (
               <ScrollReveal key={photo.id} delay={80 * (i + 1)}>
-                <div className="relative rounded-xl overflow-hidden group">
+                <div className="relative rounded-[0.625rem] overflow-hidden group">
                   <div className="aspect-[4/3]">
                     <img
                       src={photo.image}
