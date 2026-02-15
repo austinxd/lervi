@@ -81,6 +81,7 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
   const [phone, setPhone] = useState("");
   const [nationality, setNationality] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [reniecFilled, setReniecFilled] = useState(false);
 
   // Email verification
   const [verifyCode, setVerifyCode] = useState("");
@@ -110,14 +111,16 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
           setInfo("Encontramos una cuenta asociada a este documento.");
           break;
         case "register":
+        case "new":
+        default:
           if (docType === "dni" && docNumber.length === 8) {
-            reniecLookup(slug, docNumber).then((data) => {
-              if (data) {
-                setFirstName(data.preNombres);
-                setLastName(`${data.apePaterno} ${data.apeMaterno}`);
-                setNationality("PE");
-              }
-            });
+            const data = await reniecLookup(slug, docNumber);
+            if (data && data.preNombres) {
+              setFirstName(data.preNombres);
+              setLastName(`${data.apePaterno} ${data.apeMaterno}`);
+              setNationality("PE");
+              setReniecFilled(true);
+            }
           }
           setStep("register");
           break;
@@ -133,19 +136,6 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
           } catch { /* proceed without prefill */ }
           setStep("otp");
           setInfo("Encontramos una cuenta asociada a este documento. Verifique su identidad con un codigo enviado a su email.");
-          break;
-        case "new":
-        default:
-          if (docType === "dni" && docNumber.length === 8) {
-            reniecLookup(slug, docNumber).then((data) => {
-              if (data) {
-                setFirstName(data.preNombres);
-                setLastName(`${data.apePaterno} ${data.apeMaterno}`);
-                setNationality("PE");
-              }
-            });
-          }
-          setStep("register");
           break;
       }
     } catch (err) {
@@ -271,6 +261,10 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
     setInfo(null);
     setPassword("");
     setOtpCode("");
+    setReniecFilled(false);
+    setFirstName("");
+    setLastName("");
+    setNationality("");
   };
 
   const stepTitle: Record<Step, string> = {
@@ -418,14 +412,20 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                   <span className="font-medium">{DOCUMENT_TYPES.find(d => d.value === docType)?.label}:</span> {docNumber}
                 </div>
 
+                {reniecFilled && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
+                    Datos obtenidos de RENIEC
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label-field">Nombre <span className="text-red-400">*</span></label>
-                    <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="input-field" placeholder="Juan" />
+                    <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)} readOnly={reniecFilled} className={`input-field ${reniecFilled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`} placeholder="Juan" />
                   </div>
                   <div>
                     <label className="label-field">Apellido <span className="text-red-400">*</span></label>
-                    <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="input-field" placeholder="Perez" />
+                    <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)} readOnly={reniecFilled} className={`input-field ${reniecFilled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`} placeholder="Perez" />
                   </div>
                 </div>
 
@@ -456,7 +456,8 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
                     required
                     value={nationality}
                     onChange={(e) => setNationality(e.target.value)}
-                    className="input-field"
+                    disabled={reniecFilled}
+                    className={`input-field ${reniecFilled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                   >
                     <option value="">Seleccionar nacionalidad</option>
                     {NATIONALITIES.map((n) => (
