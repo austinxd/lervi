@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '../api/baseQuery';
-import type { PaginatedResponse, Payment, ReservationCreate, ReservationDetail, ReservationList } from '../interfaces/types';
+import type { PaginatedResponse, Payment, ReservationCreate, ReservationDetail, ReservationList, Room } from '../interfaces/types';
 
 export const reservationApi = createApi({
   reducerPath: 'reservationApi',
@@ -79,6 +79,10 @@ export const reservationApi = createApi({
       },
       invalidatesTags: (_r, _e, { reservationId }) => [{ type: 'Reservation', id: reservationId }, 'Dashboard'],
     }),
+    getAvailableRooms: builder.query<Room[], string>({
+      query: (reservationId) => ({ url: `/reservations/${reservationId}/available-rooms/` }),
+      providesTags: ['Room'],
+    }),
     deleteReservation: builder.mutation<void, string>({
       query: (id) => ({ url: `/reservations/${id}/`, method: 'DELETE' }),
       invalidatesTags: ['Reservation', 'Dashboard'],
@@ -88,6 +92,7 @@ export const reservationApi = createApi({
 
 export const {
   useGetReservationsQuery, useGetReservationQuery,
+  useGetAvailableRoomsQuery,
   useCreateReservationMutation, useUpdateReservationMutation,
   useConfirmReservationMutation, useCheckInReservationMutation,
   useCheckOutReservationMutation, useCancelReservationMutation,

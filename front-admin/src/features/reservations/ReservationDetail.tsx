@@ -25,6 +25,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useSnackbar } from 'notistack';
 import StatusChip from '../../components/StatusChip';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import CheckInDialog from './CheckInDialog';
 import PaymentDialog from './PaymentDialog';
 import {
   useGetReservationQuery,
@@ -45,7 +46,7 @@ import {
 } from '../../utils/statusLabels';
 import type { Payment } from '../../interfaces/types';
 
-type ActionKey = 'confirm' | 'cancel' | 'check_in' | 'check_out' | 'no_show' | 'delete';
+type ActionKey = 'confirm' | 'cancel' | 'check_out' | 'no_show' | 'delete';
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -70,6 +71,7 @@ export default function ReservationDetail() {
   const [deleteReservation] = useDeleteReservationMutation();
 
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -107,10 +109,6 @@ export default function ReservationDetail() {
         case 'cancel':
           await cancelReservation(reservation.id).unwrap();
           enqueueSnackbar('Reservacion cancelada', { variant: 'success' });
-          break;
-        case 'check_in':
-          await checkInReservation({ id: reservation.id }).unwrap();
-          enqueueSnackbar('Check-in realizado', { variant: 'success' });
           break;
         case 'check_out':
           await checkOutReservation(reservation.id).unwrap();
@@ -189,6 +187,27 @@ export default function ReservationDetail() {
         err && typeof err === 'object' && 'data' in err
           ? JSON.stringify((err as { data: unknown }).data)
           : 'Error al subir comprobante';
+      enqueueSnackbar(message, { variant: 'error' });
+    }
+  };
+
+  const handleCheckIn = async (roomId?: string) => {
+    if (!reservation) return;
+    setCheckInOpen(false);
+    try {
+      const result = await checkInReservation({ id: reservation.id, room_id: roomId }).unwrap();
+      const roomNumber = result.room_number;
+      enqueueSnackbar(
+        roomNumber
+          ? `Check-in realizado - Habitacion ${roomNumber}`
+          : 'Check-in realizado',
+        { variant: 'success' },
+      );
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'data' in err
+          ? JSON.stringify((err as { data: unknown }).data)
+          : 'Error al realizar check-in';
       enqueueSnackbar(message, { variant: 'error' });
     }
   };
@@ -391,13 +410,7 @@ export default function ReservationDetail() {
                   <Button
                     variant="contained"
                     color="success"
-                    onClick={() =>
-                      openAction(
-                        'check_in',
-                        'Realizar check-in',
-                        'Esta seguro de que desea realizar el check-in?',
-                      )
-                    }
+                    onClick={() => setCheckInOpen(true)}
                   >
                     Check-in
                   </Button>
@@ -659,6 +672,14 @@ export default function ReservationDetail() {
           </TableContainer>
         </CardContent>
       </Card>
+
+      {/* Check-in dialog */}
+      <CheckInDialog
+        open={checkInOpen}
+        reservationId={reservation.id}
+        onConfirm={handleCheckIn}
+        onCancel={() => setCheckInOpen(false)}
+      />
 
       {/* Confirm dialog */}
       <ConfirmDialog

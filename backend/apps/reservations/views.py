@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -11,6 +12,7 @@ from apps.common.mixins import TenantQuerySetMixin
 from apps.common.permissions import HasRolePermission
 from apps.rooms.constants import room_state_machine
 from apps.rooms.models import Room
+from apps.rooms.serializers import RoomSerializer
 
 from .constants import financial_state_machine, operational_state_machine
 from .models import Payment, Reservation
@@ -62,6 +64,51 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
             "user": request.user,
         }
 
+    # ---------- Available rooms for a reservation ----------
+    def _get_available_rooms(self, reservation):
+        """Return rooms available for this reservation (correct type, available status, no date overlap)."""
+        rooms = Room.objects.filter(
+            property=reservation.property,
+            room_types=reservation.room_type,
+            status="available",
+        )
+
+        # Exclude rooms occupied by other active reservations with overlapping dates
+        overlapping_reservations = Reservation.objects.filter(
+            property=reservation.property,
+            operational_status__in=["confirmed", "check_in"],
+            check_in_date__lt=reservation.check_out_date,
+            check_out_date__gt=reservation.check_in_date,
+            room__isnull=False,
+        ).exclude(pk=reservation.pk)
+
+        occupied_room_ids = overlapping_reservations.values_list("room_id", flat=True)
+        rooms = rooms.exclude(pk__in=occupied_room_ids)
+
+        # Prefer rooms matching requested bed configuration
+        if reservation.requested_bed_configuration:
+            preferred = rooms.filter(
+                active_bed_configuration=reservation.requested_bed_configuration,
+            )
+            others = rooms.exclude(
+                active_bed_configuration=reservation.requested_bed_configuration,
+            )
+            return list(preferred.order_by("number")) + list(others.order_by("number"))
+
+        return list(rooms.order_by("number"))
+
+    def _auto_assign_room(self, reservation):
+        """Return the best available room for this reservation, or None."""
+        rooms = self._get_available_rooms(reservation)
+        return rooms[0] if rooms else None
+
+    @action(detail=True, methods=["get"], url_path="available-rooms")
+    def available_rooms(self, request, pk=None):
+        reservation = self.get_object()
+        rooms = self._get_available_rooms(reservation)
+        serializer = RoomSerializer(rooms, many=True)
+        return Response(serializer.data)
+
     # ---------- Confirm ----------
     @action(detail=True, methods=["post"], url_path="confirm")
     def confirm(self, request, pk=None):
@@ -83,7 +130,7 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         serializer = CheckInSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Assign room if provided
+        # Assign room if provided, otherwise auto-assign
         room_id = serializer.validated_data.get("room_id")
         if room_id:
             room = get_object_or_404(
@@ -93,12 +140,15 @@ class ReservationViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
             )
             reservation.room = room
             reservation.save(update_fields=["room", "updated_at"])
-
-        if not reservation.room:
-            return Response(
-                {"detail": "Debe asignar una habitación antes del check-in."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        elif not reservation.room:
+            room = self._auto_assign_room(reservation)
+            if not room:
+                return Response(
+                    {"detail": "No hay habitaciones disponibles del tipo solicitado."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            reservation.room = room
+            reservation.save(update_fields=["room", "updated_at"])
 
         # Validate room is available
         if reservation.room.status != "available":
