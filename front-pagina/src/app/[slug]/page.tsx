@@ -99,10 +99,8 @@ export default async function LandingPage({ params }: Props) {
           photos={property.photos}
           stars={property.stars}
         />
-        {/* Search bar overlapping hero bottom */}
-        <div className="relative z-20 -mt-12">
-          <BookingSearchBar />
-        </div>
+        {/* Search bar — directly below hero */}
+        <BookingSearchBar />
         {about}
         {rooms}
         {gallery}

@@ -22,15 +22,30 @@ export default function HeroPremium({
   stars,
 }: HeroPremiumProps) {
   const [offsetY, setOffsetY] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches || window.innerWidth < 1024) return;
+    // Trigger entrance animations after mount
+    const timer = setTimeout(() => setMounted(true), 100);
 
-    const handleScroll = () => setOffsetY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!mq.matches && window.innerWidth >= 1024) {
+      const handleScroll = () => setOffsetY(window.scrollY);
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener("scroll", handleScroll);
+      };
+    }
+
+    return () => clearTimeout(timer);
   }, []);
+
+  // Class-based fade-in (no CSS animation dependency, no opacity:0 stuck state)
+  const fadeClass = (delay: string) =>
+    `transition-all duration-1000 ${delay} ${
+      mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+    }`;
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
@@ -43,8 +58,7 @@ export default function HeroPremium({
           <img
             src={heroImage}
             alt={hotelName}
-            className="w-full h-full object-cover scale-105"
-            style={{ animation: "premiumZoom 20s ease-out forwards" }}
+            className="w-full h-full object-cover scale-105 transition-transform duration-[20s] ease-out"
           />
         </div>
       ) : null}
@@ -62,14 +76,11 @@ export default function HeroPremium({
       {/* Subtle vignette */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#272535]/60 via-transparent to-[#272535]/30" />
 
-      {/* Content */}
+      {/* Content — always visible, fade-in via JS class toggle */}
       <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
         {/* Stars */}
         {stars && stars > 0 && (
-          <div
-            className="flex items-center justify-center gap-1 mb-6"
-            style={{ animation: "premiumFadeUp 1s ease-out 0.3s both" }}
-          >
+          <div className={`flex items-center justify-center gap-1 mb-6 ${fadeClass("delay-100")}`}>
             {Array.from({ length: stars }).map((_, i) => (
               <svg
                 key={i}
@@ -84,41 +95,29 @@ export default function HeroPremium({
         )}
 
         {/* City label */}
-        <p
-          className="text-accent-300/80 text-xs sm:text-sm uppercase tracking-[0.25em] font-sans font-medium mb-4"
-          style={{ animation: "premiumFadeUp 1s ease-out 0.5s both" }}
-        >
+        <p className={`text-accent-300/80 text-xs sm:text-sm uppercase tracking-[0.25em] font-sans font-medium mb-4 ${fadeClass("delay-200")}`}>
           {city}
         </p>
 
         {/* Gold divider */}
-        <div
-          className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto mb-6 rounded-full"
-          style={{ animation: "premiumFadeUp 0.8s ease-out 0.7s both" }}
-        />
+        <div className={`w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto mb-6 rounded-full ${fadeClass("delay-300")}`} />
 
         {/* Hotel name */}
-        <h1
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-normal text-white leading-[0.95] mb-6"
-          style={{ animation: "premiumFadeUp 1.2s ease-out 0.8s both" }}
-        >
+        <h1 className={`text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-normal text-white leading-[0.95] mb-6 ${fadeClass("delay-500")}`}>
           {hotelName}
         </h1>
 
         {/* Tagline */}
         {tagline && (
-          <p
-            className="text-white/60 text-base sm:text-lg font-sans font-light tracking-wide mb-10 max-w-xl mx-auto leading-relaxed"
-            style={{ animation: "premiumFadeUp 1s ease-out 1.0s both" }}
-          >
+          <p className={`text-white/60 text-base sm:text-lg font-sans font-light tracking-wide mb-10 max-w-xl mx-auto leading-relaxed ${fadeClass("delay-700")}`}>
             {tagline}
           </p>
         )}
 
         {!tagline && <div className="mb-10" />}
 
-        {/* CTA — pill button */}
-        <div style={{ animation: "premiumFadeUp 1s ease-out 1.2s both" }}>
+        {/* CTA — dark button (Diamant style) */}
+        <div className={fadeClass("delay-[900ms]")}>
           <Link
             href="/disponibilidad"
             className="inline-flex items-center justify-center bg-[#32373c] hover:bg-[#272535] text-white rounded-full px-10 py-4 font-sans text-sm font-medium uppercase tracking-[0.15em] transition-all duration-300"
@@ -128,11 +127,8 @@ export default function HeroPremium({
         </div>
       </div>
 
-      {/* Scroll indicator — pushed up to leave room for search bar overlay */}
-      <div
-        className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-        style={{ animation: "premiumFadeUp 1s ease-out 1.5s both" }}
-      >
+      {/* Scroll indicator */}
+      <div className={`absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 ${fadeClass("delay-[1200ms]")}`}>
         <span className="text-white/40 text-[0.65rem] uppercase tracking-[0.2em] font-sans font-medium">
           Explorar
         </span>
@@ -143,10 +139,7 @@ export default function HeroPremium({
 
       {/* Photo thumbnails — bottom right */}
       {photos.length > 0 && (
-        <div
-          className="absolute bottom-6 right-6 hidden lg:flex items-end gap-2.5"
-          style={{ animation: "premiumFadeUp 1s ease-out 1.5s both" }}
-        >
+        <div className={`absolute bottom-20 right-6 hidden lg:flex items-end gap-2.5 ${fadeClass("delay-[1200ms]")}`}>
           {photos.slice(0, 3).map((photo, i) => (
             <div
               key={photo.id}
