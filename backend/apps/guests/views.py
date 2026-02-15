@@ -26,26 +26,17 @@ class ReniecLookupView(generics.GenericAPIView):
             )
 
         api_key = settings.RENIEC_API_KEY
-        base_url = settings.RENIEC_API_URL  # e.g. https://api.casaaustin.pe/api/v1/reniec/lookup/
+        if not api_key:
+            return Response(
+                {"detail": "Servicio RENIEC no configurado."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         try:
-            # Si hay API key, intentar endpoint con key (mayor rate limit)
-            if api_key:
-                resp = requests.post(
-                    base_url,
-                    json={"dni": dni},
-                    headers={"X-API-Key": api_key, "Content-Type": "application/json"},
-                    timeout=10,
-                )
-                if resp.status_code != 401:
-                    resp.raise_for_status()
-                    return Response(resp.json())
-                logger.info("RENIEC API key rejected, falling back to public endpoint")
-
-            # Fallback: endpoint público (rate limited)
-            resp = requests.get(
-                f"{base_url}public/",
-                params={"dni": dni},
+            resp = requests.post(
+                settings.RENIEC_API_URL,
+                json={"dni": dni},
+                headers={"X-API-Key": api_key, "Content-Type": "application/json"},
                 timeout=10,
             )
             resp.raise_for_status()
