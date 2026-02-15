@@ -8,6 +8,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
   Divider,
   Grid,
   IconButton,
@@ -72,6 +73,7 @@ export default function ReservationDetail() {
 
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [voucherOpen, setVoucherOpen] = useState(false);
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -496,7 +498,8 @@ export default function ReservationDetail() {
                   component="img"
                   src={reservation.voucher_image}
                   alt="Voucher de pago"
-                  sx={{ maxWidth: 400, maxHeight: 400, objectFit: 'contain', borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 2 }}
+                  onClick={() => setVoucherOpen(true)}
+                  sx={{ maxWidth: 400, maxHeight: 400, objectFit: 'contain', borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 2, cursor: 'pointer', '&:hover': { opacity: 0.85 } }}
                 />
                 {['pending', 'incomplete'].includes(status) && (
                   <Box sx={{ display: 'flex', gap: 1 }}>
@@ -672,6 +675,19 @@ export default function ReservationDetail() {
           </TableContainer>
         </CardContent>
       </Card>
+
+      {/* Voucher lightbox */}
+      {reservation.voucher_image && (
+        <Dialog open={voucherOpen} onClose={() => setVoucherOpen(false)} maxWidth="lg">
+          <Box
+            component="img"
+            src={reservation.voucher_image}
+            alt="Voucher de pago"
+            onClick={() => setVoucherOpen(false)}
+            sx={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', cursor: 'pointer' }}
+          />
+        </Dialog>
+      )}
 
       {/* Check-in dialog */}
       <CheckInDialog
