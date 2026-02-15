@@ -38,11 +38,11 @@ const TEMPLATE_STYLES: Record<string, {
   },
   premium: {
     header: "bg-transparent border-b border-white/[0.06]",
-    link: "text-white/50 hover:text-white",
-    name: "text-white font-extralight tracking-wide group-hover:text-white/80",
-    mobileMenu: "bg-black/95 backdrop-blur-xl border-t border-white/[0.06]",
-    mobileLink: "text-white/50 hover:text-white hover:bg-white/5",
-    logoFallbackBg: "bg-white/[0.08]",
+    link: "text-white/60 hover:text-white",
+    name: "text-white tracking-wide group-hover:text-accent-300",
+    mobileMenu: "bg-[#272535]/98 backdrop-blur-xl border-t border-white/[0.08]",
+    mobileLink: "text-white/60 hover:text-white hover:bg-white/5",
+    logoFallbackBg: "bg-accent-600/30",
   },
 };
 
@@ -77,14 +77,14 @@ export default function Header({ propertyName, logo, template = "signature", slu
   const reservasHref = guestName ? "/mis-reservas" : "/iniciar-sesion";
 
   return (
-    <header className={`${template === "premium" && scrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/[0.12]" : styles.header} sticky top-0 z-50 transition-all duration-500`}>
+    <header className={`${template === "premium" && scrolled ? "bg-[#272535]/90 backdrop-blur-xl border-b border-white/[0.1]" : styles.header} sticky top-0 z-50 transition-all duration-500`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3 group">
             {logo ? (
               <img src={logo} alt={propertyName} className="h-10 w-auto object-contain" />
             ) : (
-              <div className={`w-10 h-10 rounded ${styles.logoFallbackBg} flex items-center justify-center`}>
+              <div className={`w-10 h-10 ${template === "premium" ? "rounded-full" : "rounded"} ${styles.logoFallbackBg} flex items-center justify-center`}>
                 <span className="text-white font-serif text-lg font-bold">
                   {propertyName.charAt(0)}
                 </span>

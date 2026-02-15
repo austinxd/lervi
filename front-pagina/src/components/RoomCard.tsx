@@ -15,69 +15,77 @@ export default function RoomCard({
   template = "signature",
   index,
 }: RoomCardProps) {
-  // Premium: editorial card with numbering, accent line, repositioned price
+  // Premium: Diamant-inspired — rounded, warm, clean layout
   if (template === "premium") {
-    const num = index !== undefined ? String(index + 1).padStart(2, "0") : null;
     return (
-      <Link href={`/habitaciones/${roomType.id}`} className="group block">
-        <div className="relative h-[28rem] sm:h-[32rem] overflow-hidden bg-primary-900">
-          {/* Left accent line */}
-          <div className="absolute left-0 top-0 z-20 w-0.5 h-[30%] bg-accent-500/70 group-hover:h-full transition-all duration-[800ms] ease-out" />
-
+      <div className="group rounded-xl overflow-hidden bg-white/[0.05] border border-white/[0.08] transition-all duration-500 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1">
+        {/* Image */}
+        <div className="relative h-56 sm:h-64 overflow-hidden">
           {roomType.cover_photo ? (
             <img
               src={roomType.cover_photo}
               alt={roomType.name}
-              className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-[1.4s] ease-out"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary-800 to-primary-900" />
+            <div className="w-full h-full bg-gradient-to-br from-white/[0.06] to-white/[0.02]" />
           )}
-          {/* Permanent bottom gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-
-          {/* Editorial number top-left */}
-          {num && (
-            <span className="absolute top-6 left-7 z-10 font-serif text-3xl font-extralight text-accent-500/60">
-              {num}
-            </span>
-          )}
-
-          {/* Price top-right */}
-          <div className="absolute top-6 right-7 z-10 text-right">
-            <span className="block text-white/70 font-sans text-xl font-extralight tracking-tight">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {/* Price badge */}
+          <div className="absolute top-4 right-4 bg-accent-600/90 backdrop-blur-sm rounded-full px-4 py-1.5">
+            <span className="text-white text-sm font-semibold font-sans">
               {currency} {roomType.base_price}
             </span>
-            <span className="text-white/30 text-[0.55rem] uppercase tracking-[0.2em] font-sans">
-              por noche
-            </span>
-          </div>
-
-          {/* Content overlay — always visible at bottom */}
-          <div className="absolute inset-x-0 bottom-0 p-7 sm:p-8">
-            <h3 className="font-serif text-2xl sm:text-3xl font-extralight text-white leading-tight mb-4">
-              {roomType.name}
-            </h3>
-            <div className="flex items-center gap-4 text-white/40 text-[0.65rem] font-sans tracking-wide">
-              {roomType.max_adults && <span>{roomType.max_adults} huéspedes</span>}
-              {roomType.size_sqm && <span>{roomType.size_sqm} m²</span>}
-              {roomType.view_type && (
-                <span>{VIEW_TYPE_LABELS[roomType.view_type] || roomType.view_type}</span>
-              )}
-            </div>
-
-            {/* Explore link — appears on hover */}
-            <div className="mt-5 overflow-hidden">
-              <span className="inline-flex items-center gap-2 text-white/60 text-[0.6rem] uppercase tracking-[0.25em] font-sans translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                Explorar
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-              </span>
-            </div>
+            <span className="text-white/70 text-xs font-sans"> /noche</span>
           </div>
         </div>
-      </Link>
+
+        {/* Content */}
+        <div className="p-6">
+          <h3 className="font-serif text-xl text-white/95 mb-3 group-hover:text-accent-300 transition-colors">
+            {roomType.name}
+          </h3>
+
+          {/* Specs row */}
+          <div className="flex items-center gap-3 text-xs text-white/50 font-sans mb-4 flex-wrap">
+            {roomType.max_adults && (
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-accent-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" />
+                </svg>
+                {roomType.max_adults} huespedes
+              </span>
+            )}
+            {roomType.size_sqm && (
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-accent-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                </svg>
+                {roomType.size_sqm} m²
+              </span>
+            )}
+            {roomType.view_type && (
+              <span>{VIEW_TYPE_LABELS[roomType.view_type] || roomType.view_type}</span>
+            )}
+          </div>
+
+          {roomType.description && (
+            <p className="text-sm text-white/40 mb-5 line-clamp-2 leading-relaxed font-sans">
+              {roomType.description}
+            </p>
+          )}
+
+          <Link
+            href={`/habitaciones/${roomType.id}`}
+            className="inline-flex items-center gap-2 text-accent-400 hover:text-accent-300 text-sm font-medium font-sans transition-colors"
+          >
+            Ver detalle
+            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </Link>
+        </div>
+      </div>
     );
   }
 

@@ -13,24 +13,16 @@ export default function RoomsSection({ roomTypes, currency, template }: RoomsSec
     return (
       <section className="py-24 sm:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Editorial heading */}
           <ScrollReveal>
-            <div className="flex items-start gap-6 mb-16">
-              <span className="text-7xl font-serif font-extralight text-accent-500/20 leading-none hidden sm:block">
-                02
-              </span>
-              <div>
-                <div className="w-8 h-px bg-accent-500/40 mb-4" />
-                <p className="text-accent-500/80 text-[0.6rem] uppercase tracking-[0.35em] font-sans font-light mb-3">
-                  Alojamiento
-                </p>
-                <h2 className="section-title">Nuestras Habitaciones</h2>
-              </div>
+            <div className="text-center mb-16">
+              <p className="section-subtitle">Alojamiento</p>
+              <h2 className="section-title mb-4">Nuestras Habitaciones</h2>
+              <div className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto rounded-full" />
             </div>
           </ScrollReveal>
 
           {roomTypes.length === 0 ? (
-            <p className="text-center text-gray-400 font-sans">
+            <p className="text-center text-white/40 font-sans">
               No hay habitaciones disponibles en este momento.
             </p>
           ) : (

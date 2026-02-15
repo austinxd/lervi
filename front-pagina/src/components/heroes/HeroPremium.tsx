@@ -25,83 +25,55 @@ export default function HeroPremium({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
+    if (mq.matches || window.innerWidth < 1024) return;
 
-    // Only enable parallax on desktop
-    const isDesktop = window.innerWidth >= 1024;
-    if (!isDesktop) return;
-
-    const handleScroll = () => {
-      setOffsetY(window.scrollY);
-    };
-
+    const handleScroll = () => setOffsetY(window.scrollY);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <section className="relative h-screen flex items-center justify-center bg-black overflow-hidden">
-      {/* Full-bleed background image with parallax */}
+    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      {/* Background image with parallax */}
       {heroImage ? (
-        <>
-          <div
-            className="absolute inset-0"
-            style={{ transform: `translateY(${offsetY * 0.3}px)` }}
-          >
-            <img
-              src={heroImage}
-              alt={hotelName}
-              className="w-full h-full object-cover scale-105"
-              style={{ animation: "premiumZoom 20s ease-out forwards" }}
-            />
-          </div>
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-        </>
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-900 via-primary-800 to-black" />
-      )}
-
-      {/* Centered content */}
-      <div className="relative z-10 text-center px-4 sm:px-6">
-        {/* Thin decorative line */}
         <div
-          className="w-px h-16 bg-white/20 mx-auto mb-10"
-          style={{ animation: "premiumFadeDown 1.2s ease-out 0.3s both" }}
-        />
-
-        {/* City */}
-        <p
-          className="text-white/40 text-[0.6rem] sm:text-[0.7rem] uppercase tracking-[0.4em] font-sans font-light mb-5"
-          style={{ animation: "premiumFadeUp 1s ease-out 0.6s both" }}
+          className="absolute inset-0"
+          style={{ transform: `translateY(${offsetY * 0.25}px)` }}
         >
-          {city}
-        </p>
+          <img
+            src={heroImage}
+            alt={hotelName}
+            className="w-full h-full object-cover scale-105"
+            style={{ animation: "premiumZoom 20s ease-out forwards" }}
+          />
+        </div>
+      ) : null}
 
-        {/* Golden rule */}
-        <div
-          className="w-12 h-px bg-accent-500/60 mx-auto mb-5"
-          style={{ animation: "premiumFadeUp 1s ease-out 0.8s both" }}
-        />
+      {/* Warm gradient overlay — Diamant-inspired 45deg blend */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: heroImage
+            ? "linear-gradient(45deg, rgba(39,37,53,0.85) 0%, rgba(39,37,53,0.5) 40%, rgba(196,166,118,0.3) 100%)"
+            : "linear-gradient(45deg, #272535 0%, #1e1c2a 50%, rgb(var(--color-accent-700-rgb)) 100%)",
+        }}
+      />
 
-        {/* Hotel name */}
-        <h1
-          className="text-5xl sm:text-7xl md:text-8xl lg:text-[8.5rem] xl:text-[10rem] font-serif font-extralight text-white leading-[0.9] mb-5 tracking-[-0.02em]"
-          style={{ animation: "premiumFadeUp 1.2s ease-out 1.0s both" }}
-        >
-          {hotelName}
-        </h1>
+      {/* Subtle vignette */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#272535]/60 via-transparent to-[#272535]/30" />
 
+      {/* Content */}
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
         {/* Stars */}
         {stars && stars > 0 && (
           <div
-            className="flex items-center justify-center gap-1.5 mb-6"
-            style={{ animation: "premiumFadeUp 1s ease-out 1.2s both" }}
+            className="flex items-center justify-center gap-1 mb-6"
+            style={{ animation: "premiumFadeUp 1s ease-out 0.3s both" }}
           >
             {Array.from({ length: stars }).map((_, i) => (
               <svg
                 key={i}
-                className="w-3.5 h-3.5 text-accent-500/70"
+                className="w-4 h-4 text-accent-400"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -111,26 +83,47 @@ export default function HeroPremium({
           </div>
         )}
 
+        {/* City label */}
+        <p
+          className="text-accent-300/80 text-xs sm:text-sm uppercase tracking-[0.25em] font-sans font-medium mb-4"
+          style={{ animation: "premiumFadeUp 1s ease-out 0.5s both" }}
+        >
+          {city}
+        </p>
+
+        {/* Gold divider */}
+        <div
+          className="w-16 h-0.5 bg-gradient-to-r from-accent-400 to-accent-600 mx-auto mb-6 rounded-full"
+          style={{ animation: "premiumFadeUp 0.8s ease-out 0.7s both" }}
+        />
+
+        {/* Hotel name */}
+        <h1
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-normal text-white leading-[0.95] mb-6"
+          style={{ animation: "premiumFadeUp 1.2s ease-out 0.8s both" }}
+        >
+          {hotelName}
+        </h1>
+
         {/* Tagline */}
         {tagline && (
           <p
-            className="text-white/35 text-sm sm:text-base font-sans font-light tracking-wide mb-12 max-w-md mx-auto"
-            style={{ animation: "premiumFadeUp 1s ease-out 1.3s both" }}
+            className="text-white/60 text-base sm:text-lg font-sans font-light tracking-wide mb-10 max-w-xl mx-auto leading-relaxed"
+            style={{ animation: "premiumFadeUp 1s ease-out 1.0s both" }}
           >
             {tagline}
           </p>
         )}
 
-        {!tagline && !stars && <div className="mb-12" />}
-        {!tagline && stars && stars > 0 && <div className="mb-6" />}
+        {!tagline && <div className="mb-10" />}
 
-        {/* CTA */}
-        <div style={{ animation: "premiumFadeUp 1s ease-out 1.6s both" }}>
+        {/* CTA — pill button */}
+        <div style={{ animation: "premiumFadeUp 1s ease-out 1.2s both" }}>
           <Link
             href="/disponibilidad"
-            className="inline-flex items-center justify-center border border-white/25 text-white/80 px-14 py-4 font-sans text-[0.6rem] sm:text-[0.65rem] font-medium uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all duration-700"
+            className="inline-flex items-center justify-center bg-accent-600 hover:bg-accent-700 text-white rounded-full px-10 py-4 font-sans text-sm font-medium uppercase tracking-[0.15em] transition-all duration-300 shadow-lg shadow-accent-600/30 hover:shadow-accent-600/40"
           >
-            Reservar Estancia
+            Reservar Ahora
           </Link>
         </div>
       </div>
@@ -138,38 +131,33 @@ export default function HeroPremium({
       {/* Scroll indicator */}
       <div
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-        style={{ animation: "premiumFadeUp 1s ease-out 2.0s both" }}
+        style={{ animation: "premiumFadeUp 1s ease-out 1.5s both" }}
       >
-        <span className="text-white/25 text-[0.55rem] uppercase tracking-[0.3em] font-sans">
+        <span className="text-white/40 text-[0.65rem] uppercase tracking-[0.2em] font-sans font-medium">
           Explorar
         </span>
-        <div className="w-px h-8 bg-white/20 relative overflow-hidden">
-          <div className="w-full h-full bg-white/60 animate-scrollLine" />
+        <div className="w-px h-8 bg-white/20 relative overflow-hidden rounded-full">
+          <div className="w-full h-full bg-accent-400/80 animate-scrollLine" />
         </div>
       </div>
 
-      {/* Gallery preview strip */}
+      {/* Photo thumbnails — bottom right */}
       {photos.length > 0 && (
         <div
-          className="absolute bottom-0 right-0 hidden lg:flex items-end gap-2 p-6"
-          style={{ animation: "premiumFadeUp 1s ease-out 2.0s both" }}
+          className="absolute bottom-6 right-6 hidden lg:flex items-end gap-2.5"
+          style={{ animation: "premiumFadeUp 1s ease-out 1.5s both" }}
         >
-          {/* Connector line */}
-          <div className="w-8 h-px bg-white/15 self-center mr-1" />
-
           {photos.slice(0, 3).map((photo, i) => (
-            <div key={photo.id} className="relative group/thumb">
-              {/* Editorial number */}
-              <span className="absolute -top-5 left-0 text-white/30 text-[0.55rem] font-sans tracking-wider">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className="w-24 h-32 overflow-hidden opacity-40 hover:opacity-80 transition-opacity duration-500">
-                <img
-                  src={photo.image}
-                  alt={photo.caption || `${hotelName} ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+            <div
+              key={photo.id}
+              className="w-20 h-28 rounded-lg overflow-hidden opacity-50 hover:opacity-90 transition-all duration-400 hover:scale-105"
+              style={{ boxShadow: "0 4px 15px rgba(0,0,0,0.4)" }}
+            >
+              <img
+                src={photo.image}
+                alt={photo.caption || `${hotelName} ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
             </div>
           ))}
         </div>
