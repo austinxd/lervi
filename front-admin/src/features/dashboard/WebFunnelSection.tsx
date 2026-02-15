@@ -13,7 +13,6 @@ import {
 import { useAppSelector } from '../../store/hooks';
 import { useGetWebFunnelQuery } from '../../services/dashboardService';
 import FunnelChart from './FunnelChart';
-import KpiBridgeCards from './KpiBridgeCards';
 import InsightsPanel from './InsightsPanel';
 import CheckoutFrictionPanel from './CheckoutFrictionPanel';
 import type { DataTier } from './InsightsPanel';
@@ -85,15 +84,6 @@ export default function WebFunnelSection() {
             </Alert>
           ) : (
             <>
-              {/* KPI bridge cards — full width */}
-              <Box sx={{ mb: 2 }}>
-                <KpiBridgeCards
-                  totalReservations={data.kpi_bridge.total_reservations}
-                  webReservations={data.kpi_bridge.web_reservations}
-                  pctDirect={data.kpi_bridge.pct_direct}
-                />
-              </Box>
-
               {tier === 'collecting' && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                   Recolectando datos suficientes para analisis. Se necesitan al menos 30 sesiones para generar insights confiables.
@@ -111,18 +101,32 @@ export default function WebFunnelSection() {
                   />
                 </Grid>
 
-                {/* Right column: conversion KPI + insights + friction */}
+                {/* Right column: conversion + bridge + insights + friction */}
                 <Grid item xs={12} md={7}>
-                  {/* Conversion rate */}
+                  {/* Conversion rate + bridge KPIs */}
                   <Card sx={{ mb: 2, borderLeft: '4px solid #2E7D32' }}>
                     <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 1.5 }}>
                         <Typography variant="h4" fontWeight={800} color="#2E7D32">
                           {conversionRate}{conversionRate !== '—' ? '%' : ''}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Tasa de conversion web
                         </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="h6" fontWeight={700}>{data.kpi_bridge.total_reservations}</Typography>
+                          <Typography variant="caption" color="text.secondary">Reservas totales</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" fontWeight={700} color="#2E7D32">{data.kpi_bridge.web_reservations}</Typography>
+                          <Typography variant="caption" color="text.secondary">Reservas web</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" fontWeight={700} color="#ED6C02">{data.kpi_bridge.pct_direct}%</Typography>
+                          <Typography variant="caption" color="text.secondary">% Directo</Typography>
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>
