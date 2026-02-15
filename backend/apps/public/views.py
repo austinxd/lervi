@@ -683,24 +683,19 @@ class VoucherUploadView(APIView):
             confirmation_code=confirmation_code.upper(),
         )
 
-        # Validate status
-        if reservation.operational_status != Reservation.OperationalStatus.INCOMPLETE:
+        # Validate status: allow incomplete (first voucher) or partial payment (additional voucher)
+        is_incomplete = reservation.operational_status == Reservation.OperationalStatus.INCOMPLETE
+        is_partial = reservation.financial_status in ("pending_payment", "partial")
+        if not is_incomplete and not is_partial:
             return Response(
-                {"detail": "Solo se puede subir voucher para reservas incompletas."},
+                {"detail": "No se puede subir comprobante en el estado actual."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Validate deadline
-        if reservation.payment_deadline and timezone.now() > reservation.payment_deadline:
+        # Validate deadline only for first voucher (incomplete)
+        if is_incomplete and reservation.payment_deadline and timezone.now() > reservation.payment_deadline:
             return Response(
                 {"detail": "El plazo para subir el comprobante ha expirado."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Validate no previous voucher
-        if reservation.voucher_image:
-            return Response(
-                {"detail": "Ya se ha subido un comprobante para esta reserva."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -728,8 +723,11 @@ class VoucherUploadView(APIView):
             )
 
         reservation.voucher_image = voucher
-        reservation.operational_status = Reservation.OperationalStatus.PENDING
-        reservation.save(update_fields=["voucher_image", "operational_status", "updated_at"])
+        update_fields = ["voucher_image", "updated_at"]
+        if is_incomplete:
+            reservation.operational_status = Reservation.OperationalStatus.PENDING
+            update_fields.append("operational_status")
+        reservation.save(update_fields=update_fields)
 
         return Response(
             {"detail": "Comprobante subido exitosamente. Pendiente de confirmacion."},

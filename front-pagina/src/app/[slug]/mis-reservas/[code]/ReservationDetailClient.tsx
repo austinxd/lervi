@@ -170,6 +170,14 @@ export default function ReservationDetailClient({ slug, code }: Props) {
     try {
       await uploadVoucher(slug, code, file);
       setUploaded(true);
+      setFile(null);
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Refresh reservation data to show updated voucher and amounts
+      try {
+        const updated = await lookupReservation(slug, code);
+        setReservation(updated);
+      } catch { /* ignore refresh error */ }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al subir el comprobante."
@@ -244,7 +252,8 @@ export default function ReservationDetailClient({ slug, code }: Props) {
   const deadlineExpired = isIncomplete && reservation.payment_deadline && countdown.expired;
   const deadlineActive = isIncomplete && reservation.payment_deadline && !countdown.expired;
   const isUrgent = countdown.total < 10 * 60 * 1000;
-  const showPaymentSection = (deadlineActive && !uploaded) || false;
+  const isPartialPayment = reservation.financial_status === 'partial' && parseFloat(reservation.amount_due) > 0;
+  const showPaymentSection = (deadlineActive && !uploaded) || isPartialPayment;
 
   /* ── Status alert content ── */
   const statusAlert = (() => {
@@ -266,7 +275,7 @@ export default function ReservationDetailClient({ slug, code }: Props) {
         iconPath: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
       };
     }
-    if (uploaded || isPending) {
+    if ((uploaded && isIncomplete) || isPending) {
       return {
         bg: "bg-blue-50 border-blue-200",
         icon: "text-blue-500",
@@ -375,15 +384,22 @@ export default function ReservationDetailClient({ slug, code }: Props) {
           {uploaded && reservation.voucher_image && (
             <div className="border border-green-200 bg-green-50 rounded-lg p-3">
               <p className="text-xs font-semibold text-green-800 mb-2">Comprobante enviado</p>
+              {isPartialPayment && (
+                <p className="text-xs text-amber-700 font-medium mb-2">
+                  Pago parcial — Pendiente: {reservation.currency} {reservation.amount_due}
+                </p>
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={reservation.voucher_image} alt="Voucher" className="w-full max-h-48 object-contain rounded" />
             </div>
           )}
 
           {/* Upload voucher – mobile */}
-          {showPaymentSection && !uploaded && (
+          {((showPaymentSection && !uploaded) || isPartialPayment) && (
             <div className="bg-white rounded-lg border border-sand-200 p-4">
-              <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">Subir comprobante</h3>
+              <h3 className="font-sans font-semibold text-sm text-primary-900 mb-3">
+                {isPartialPayment ? 'Subir nuevo comprobante' : 'Subir comprobante'}
+              </h3>
               {!preview ? (
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -533,8 +549,10 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                   {showPaymentSection && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
                       <p className="text-sm text-blue-700 font-sans">
-                        <span className="font-semibold">Importante:</span> Para confirmar la reserva
-                        debe realizar la transferencia y subir el comprobante dentro del plazo indicado.
+                        <span className="font-semibold">Importante:</span>{' '}
+                        {isPartialPayment
+                          ? 'Para completar el pago, realice la transferencia del saldo restante y suba el nuevo comprobante.'
+                          : 'Para confirmar la reserva debe realizar la transferencia y subir el comprobante dentro del plazo indicado.'}
                       </p>
                     </div>
                   )}
@@ -690,15 +708,22 @@ export default function ReservationDetailClient({ slug, code }: Props) {
               {uploaded && reservation.voucher_image && (
                 <div className="mt-4 border border-green-200 bg-green-50 rounded-lg p-3">
                   <p className="text-xs font-semibold text-green-800 mb-2">Comprobante enviado</p>
+                  {isPartialPayment && (
+                    <p className="text-xs text-amber-700 font-medium mb-2">
+                      Pago parcial — Pendiente: {reservation.currency} {reservation.amount_due}
+                    </p>
+                  )}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={reservation.voucher_image} alt="Voucher" className="w-full max-h-48 object-contain rounded" />
                 </div>
               )}
 
               {/* Upload voucher – sidebar */}
-              {showPaymentSection && !uploaded && (
+              {((showPaymentSection && !uploaded) || isPartialPayment) && (
                 <div className="mt-4">
-                  <h4 className="font-sans font-semibold text-xs text-primary-900 mb-2">Subir comprobante</h4>
+                  <h4 className="font-sans font-semibold text-xs text-primary-900 mb-2">
+                    {isPartialPayment ? 'Subir nuevo comprobante' : 'Subir comprobante'}
+                  </h4>
                   {!preview ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}

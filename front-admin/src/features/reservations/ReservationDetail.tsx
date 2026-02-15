@@ -481,7 +481,7 @@ export default function ReservationDetail() {
       )}
 
       {/* Voucher section */}
-      {(reservation.voucher_image || reservation.payment_deadline || ['incomplete', 'pending'].includes(status)) && (
+      {(reservation.voucher_image || reservation.payment_deadline || ['incomplete', 'pending'].includes(status) || ['pending_payment', 'partial'].includes(reservation.financial_status)) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -525,8 +525,50 @@ export default function ReservationDetail() {
                     </Button>
                   </Box>
                 )}
+                {['pending_payment', 'partial'].includes(reservation.financial_status) && !['incomplete', 'pending'].includes(status) && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Pago parcial. Puede subir un nuevo comprobante para el saldo pendiente.
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={<CloudUploadIcon />}
+                      >
+                        Subir nuevo comprobante
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => setVoucherFile(e.target.files?.[0] ?? null)}
+                        />
+                      </Button>
+                      {voucherFile && (
+                        <Typography variant="body2" color="text.secondary">
+                          {voucherFile.name}
+                        </Typography>
+                      )}
+                    </Box>
+                    {voucherFile && (
+                      <Box sx={{ mt: 2 }}>
+                        <Box
+                          component="img"
+                          src={URL.createObjectURL(voucherFile)}
+                          alt="Preview"
+                          sx={{ maxWidth: 300, maxHeight: 300, objectFit: 'contain', borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 2 }}
+                        />
+                        <Box>
+                          <Button variant="contained" onClick={handleUploadVoucher}>
+                            Subir comprobante
+                          </Button>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Box>
-            ) : ['incomplete', 'pending'].includes(status) ? (
+            ) : ['incomplete', 'pending'].includes(status) || ['pending_payment', 'partial'].includes(reservation.financial_status) ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   El huesped aun no ha subido el comprobante. Puede subirlo manualmente.
