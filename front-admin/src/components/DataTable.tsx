@@ -98,8 +98,8 @@ export default function DataTable<T>({
         count={total}
         page={page}
         onPageChange={(_, p) => onPageChange(p)}
-        rowsPerPage={10}
-        rowsPerPageOptions={[10]}
+        rowsPerPage={20}
+        rowsPerPageOptions={[20]}
         labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
       />
     </Paper>
