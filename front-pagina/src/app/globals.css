@@ -254,10 +254,15 @@
   box-shadow: 0 6px 20px rgb(var(--color-accent-600-rgb) / 0.4);
 }
 
-/* --- Cards: 10px radius, subtle border --- */
+/* --- Cards: 10px radius, Diamant shadow --- */
 [data-template="premium"] .card-luxury {
   border-radius: 0.625rem;
   border: 1px solid #eee;
+  box-shadow: 0 10px 54px 0 rgba(0, 0, 0, 0.05);
+}
+[data-template="premium"] .card-luxury:hover {
+  box-shadow: 0 15px 60px 0 rgba(0, 0, 0, 0.09);
+  transform: translateY(-3px);
 }
 
 /* --- Section alt bg: subtle off-white --- */
@@ -269,18 +274,44 @@
 [data-template="premium"] .dec-frame {
   position: relative;
   border-radius: 10px;
-  padding: 60px;
+  padding: 30px;
+}
+@media (min-width: 640px) {
+  [data-template="premium"] .dec-frame {
+    padding: 50px;
+  }
+}
+@media (min-width: 1024px) {
+  [data-template="premium"] .dec-frame {
+    padding: 60px;
+  }
 }
 [data-template="premium"] .dec-frame::before {
   content: '';
   position: absolute;
-  top: 30px;
-  right: 30px;
-  bottom: 30px;
-  left: 30px;
+  top: 15px;
+  right: 15px;
+  bottom: 15px;
+  left: 15px;
   border: 1px solid #eee;
   border-radius: 10px;
   pointer-events: none;
+}
+@media (min-width: 640px) {
+  [data-template="premium"] .dec-frame::before {
+    top: 25px;
+    right: 25px;
+    bottom: 25px;
+    left: 25px;
+  }
+}
+@media (min-width: 1024px) {
+  [data-template="premium"] .dec-frame::before {
+    top: 30px;
+    right: 30px;
+    bottom: 30px;
+    left: 30px;
+  }
 }
 
 /* --- Divider: gold gradient --- */
