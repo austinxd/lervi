@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.rooms.models import Room
+
 from .models import Payment, Reservation
 
 
@@ -107,6 +109,39 @@ class ReservationCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"check_out_date": "La fecha de salida debe ser posterior a la de entrada."}
             )
+
+        # Validate room availability
+        prop = data["property"]
+        room_type = data["room_type"]
+        active_statuses = ["incomplete", "pending", "confirmed", "check_in"]
+
+        eligible_room_ids = set(
+            Room.objects.filter(property=prop, room_types=room_type).values_list("id", flat=True)
+        )
+        busy_room_ids = set(
+            Reservation.objects.filter(
+                property=prop,
+                room_id__in=eligible_room_ids,
+                operational_status__in=active_statuses,
+                check_in_date__lt=data["check_out_date"],
+                check_out_date__gt=data["check_in_date"],
+            ).values_list("room_id", flat=True)
+        )
+        unassigned_count = Reservation.objects.filter(
+            property=prop,
+            room_type=room_type,
+            room__isnull=True,
+            operational_status__in=active_statuses,
+            check_in_date__lt=data["check_out_date"],
+            check_out_date__gt=data["check_in_date"],
+        ).count()
+        total_rooms = len(eligible_room_ids)
+        available = total_rooms - len(busy_room_ids) - unassigned_count
+        if available <= 0:
+            raise serializers.ValidationError(
+                {"room_type": "No hay disponibilidad para este tipo de habitacion en las fechas seleccionadas."}
+            )
+
         return data
 
 
