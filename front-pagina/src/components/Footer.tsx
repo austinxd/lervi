@@ -3,9 +3,10 @@ import type { OrganizationInfo } from "@/lib/types";
 
 interface FooterProps {
   org: OrganizationInfo;
+  template?: string;
 }
 
-export default function Footer({ org }: FooterProps) {
+export default function Footer({ org, template }: FooterProps) {
   const { social_links } = org;
   const hasSocials =
     social_links?.instagram ||
@@ -17,17 +18,21 @@ export default function Footer({ org }: FooterProps) {
   const property = org.properties[0];
 
   return (
-    <footer className="bg-primary-900 text-white/70">
+    <footer className={`bg-primary-900 ${template === "premium" ? "text-white/45" : "text-white/70"}`}>
+      {/* Premium gold rule */}
+      {template === "premium" && (
+        <div className="h-px bg-gradient-to-r from-transparent via-accent-500/40 to-transparent" />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main grid */}
-        <div className="py-16 lg:py-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+        <div className={`${template === "premium" ? "py-20 lg:py-24" : "py-16 lg:py-20"} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12`}>
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-6">
               {org.logo ? (
                 <img src={org.logo} alt={org.name} className="h-10 w-auto object-contain" />
               ) : (
-                <div className="w-10 h-10 rounded bg-white/10 flex items-center justify-center">
+                <div className={`w-10 h-10 ${template === "premium" ? "rounded-full" : "rounded"} bg-white/10 flex items-center justify-center`}>
                   <span className="text-white font-serif text-lg font-bold">
                     {org.name.charAt(0)}
                   </span>
@@ -106,7 +111,7 @@ export default function Footer({ org }: FooterProps) {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-white font-sans text-xs font-semibold uppercase tracking-[0.2em] mb-6">
+            <h4 className={`text-white font-sans uppercase mb-6 ${template === "premium" ? "text-[0.6rem] font-light tracking-[0.3em]" : "text-xs font-semibold tracking-[0.2em]"}`}>
               Navegación
             </h4>
             <ul className="space-y-3">
@@ -131,7 +136,7 @@ export default function Footer({ org }: FooterProps) {
           {/* Contact */}
           {property && (
             <div>
-              <h4 className="text-white font-sans text-xs font-semibold uppercase tracking-[0.2em] mb-6">
+              <h4 className={`text-white font-sans uppercase mb-6 ${template === "premium" ? "text-[0.6rem] font-light tracking-[0.3em]" : "text-xs font-semibold tracking-[0.2em]"}`}>
                 Contacto
               </h4>
               <ul className="space-y-3.5 text-sm">
@@ -173,7 +178,7 @@ export default function Footer({ org }: FooterProps) {
           {/* Hours & Info */}
           {property && (
             <div>
-              <h4 className="text-white font-sans text-xs font-semibold uppercase tracking-[0.2em] mb-6">
+              <h4 className={`text-white font-sans uppercase mb-6 ${template === "premium" ? "text-[0.6rem] font-light tracking-[0.3em]" : "text-xs font-semibold tracking-[0.2em]"}`}>
                 Horarios
               </h4>
               <ul className="space-y-3 text-sm">

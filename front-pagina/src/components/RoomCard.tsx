@@ -6,23 +6,29 @@ interface RoomCardProps {
   roomType: RoomType;
   currency?: string;
   template?: string;
+  index?: number;
 }
 
 export default function RoomCard({
   roomType,
   currency = "PEN",
   template = "signature",
+  index,
 }: RoomCardProps) {
-  // Premium: Le Kaila-inspired editorial card — tall image with overlay content
+  // Premium: editorial card with numbering, accent line, repositioned price
   if (template === "premium") {
+    const num = index !== undefined ? String(index + 1).padStart(2, "0") : null;
     return (
       <Link href={`/habitaciones/${roomType.id}`} className="group block">
         <div className="relative h-[28rem] sm:h-[32rem] overflow-hidden bg-primary-900">
+          {/* Left accent line */}
+          <div className="absolute left-0 top-0 z-20 w-0.5 h-[30%] bg-accent-500/70 group-hover:h-full transition-all duration-[800ms] ease-out" />
+
           {roomType.cover_photo ? (
             <img
               src={roomType.cover_photo}
               alt={roomType.name}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-[1.2s] ease-out"
+              className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-[1.4s] ease-out"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary-800 to-primary-900" />
@@ -30,11 +36,25 @@ export default function RoomCard({
           {/* Permanent bottom gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
+          {/* Editorial number top-left */}
+          {num && (
+            <span className="absolute top-6 left-7 z-10 font-serif text-3xl font-extralight text-accent-500/60">
+              {num}
+            </span>
+          )}
+
+          {/* Price top-right */}
+          <div className="absolute top-6 right-7 z-10 text-right">
+            <span className="block text-white/70 font-sans text-xl font-extralight tracking-tight">
+              {currency} {roomType.base_price}
+            </span>
+            <span className="text-white/30 text-[0.55rem] uppercase tracking-[0.2em] font-sans">
+              por noche
+            </span>
+          </div>
+
           {/* Content overlay — always visible at bottom */}
           <div className="absolute inset-x-0 bottom-0 p-7 sm:p-8">
-            <p className="text-white/40 text-[0.6rem] uppercase tracking-[0.3em] font-sans font-light mb-3">
-              Desde {currency} {roomType.base_price} / noche
-            </p>
             <h3 className="font-serif text-2xl sm:text-3xl font-extralight text-white leading-tight mb-4">
               {roomType.name}
             </h3>

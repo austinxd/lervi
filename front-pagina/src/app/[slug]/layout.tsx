@@ -59,7 +59,7 @@ export default async function HotelLayout({ params, children }: Props) {
       <EventInit slug={slug} />
       <Header propertyName={org.name} logo={org.logo} template={templateKey} slug={slug} />
       <main className="flex-1">{children}</main>
-      <Footer org={org} />
+      <Footer org={org} template={templateKey} />
     </div>
   );
 }

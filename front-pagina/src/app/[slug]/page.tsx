@@ -9,6 +9,7 @@ import GallerySection from "@/components/sections/GallerySection";
 import RoomsSection from "@/components/sections/RoomsSection";
 import CTASection from "@/components/sections/CTASection";
 import InfoSection from "@/components/sections/InfoSection";
+import ExperienceSection from "@/components/sections/ExperienceSection";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -37,7 +38,7 @@ export default async function LandingPage({ params }: Props) {
 
   // Shared section elements
   const about = property.description ? (
-    <AboutSection key="about" description={property.description} />
+    <AboutSection key="about" description={property.description} template={template} />
   ) : null;
 
   const rooms = (
@@ -50,7 +51,7 @@ export default async function LandingPage({ params }: Props) {
   );
 
   const amenities = (
-    <AmenitiesSection key="amenities" amenities={property.amenities} />
+    <AmenitiesSection key="amenities" amenities={property.amenities} template={template} />
   );
 
   const gallery = (
@@ -58,12 +59,13 @@ export default async function LandingPage({ params }: Props) {
       key="gallery"
       photos={property.photos}
       propertyName={property.name}
+      template={template}
     />
   );
 
   const cta = <CTASection key="cta" template={template} />;
 
-  const info = <InfoSection key="info" property={property} />;
+  const info = <InfoSection key="info" property={property} template={template} />;
 
   // Template-specific hero + section order
   if (template === "essential") {
@@ -94,9 +96,15 @@ export default async function LandingPage({ params }: Props) {
           tagline={property.tagline}
           heroImage={property.hero_image}
           photos={property.photos}
+          stars={property.stars}
         />
         {about}
         {rooms}
+        <ExperienceSection
+          key="experience"
+          photos={property.photos}
+          propertyName={property.name}
+        />
         {gallery}
         {amenities}
         {cta}

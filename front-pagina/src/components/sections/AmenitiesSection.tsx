@@ -1,5 +1,8 @@
+import ScrollReveal from "@/components/ScrollReveal";
+
 interface AmenitiesSectionProps {
   amenities: string[];
+  template?: string;
 }
 
 const AMENITY_ICONS: Record<string, string> = {
@@ -13,12 +16,75 @@ function getIconPath(amenity: string): string {
   for (const [key, path] of Object.entries(AMENITY_ICONS)) {
     if (lower.includes(key)) return path;
   }
-  // Default check icon
   return "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
 }
 
-export default function AmenitiesSection({ amenities }: AmenitiesSectionProps) {
+export default function AmenitiesSection({ amenities, template }: AmenitiesSectionProps) {
   if (amenities.length === 0) return null;
+
+  if (template === "premium") {
+    // Split into two columns
+    const mid = Math.ceil(amenities.length / 2);
+    const col1 = amenities.slice(0, mid);
+    const col2 = amenities.slice(mid);
+
+    return (
+      <section className="section-alt-bg py-24 sm:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Editorial heading */}
+          <ScrollReveal>
+            <div className="flex items-start gap-6 mb-16">
+              <span className="text-7xl font-serif font-extralight text-accent-500/20 leading-none hidden sm:block">
+                04
+              </span>
+              <div>
+                <div className="w-8 h-px bg-accent-500/40 mb-4" />
+                <p className="text-accent-500/80 text-[0.6rem] uppercase tracking-[0.35em] font-sans font-light mb-3">
+                  Servicios
+                </p>
+                <h2 className="section-title">Servicios del Hotel</h2>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* Two-column editorial list */}
+          <ScrollReveal>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 lg:gap-x-20">
+              {[col1, col2].map((col, colIdx) => (
+                <div key={colIdx}>
+                  {col.map((amenity) => (
+                    <div
+                      key={amenity}
+                      className="group flex items-center gap-5 py-5 border-t border-white/10 hover:border-accent-500/30 transition-colors duration-300"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-white/[0.06] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors duration-300">
+                        <svg
+                          className="w-4.5 h-4.5 text-accent-500/80"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d={getIconPath(amenity)}
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-sans font-light text-white/60 group-hover:text-white/80 transition-colors duration-300 tracking-wide">
+                        {amenity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="section-alt-bg py-24 sm:py-32">

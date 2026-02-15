@@ -50,11 +50,21 @@ export default function Header({ propertyName, logo, template = "signature", slu
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [guestName, setGuestName] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
   const styles = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.signature;
 
   useEffect(() => {
     setGuestName(getGuestToken() ? getGuestName() : null);
   }, []);
+
+  useEffect(() => {
+    if (template !== "premium") return;
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [template]);
 
   const handleLogout = () => {
     clearGuestSession();
@@ -67,7 +77,7 @@ export default function Header({ propertyName, logo, template = "signature", slu
   const reservasHref = guestName ? "/mis-reservas" : "/iniciar-sesion";
 
   return (
-    <header className={`${styles.header} sticky top-0 z-50`}>
+    <header className={`${template === "premium" && scrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/[0.12]" : styles.header} sticky top-0 z-50 transition-all duration-500`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3 group">

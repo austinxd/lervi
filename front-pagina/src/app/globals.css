@@ -463,3 +463,26 @@
 [data-template="premium"] footer h4 { color: rgba(255,255,255,0.6) !important; font-weight: 300; }
 [data-template="premium"] footer a { color: rgba(255,255,255,0.45); }
 [data-template="premium"] footer a:hover { color: rgb(var(--color-accent-400-rgb)); }
+
+/* Premium: new animations */
+@keyframes premiumLineGrow {
+  0% { width: 0; opacity: 0; }
+  100% { width: 3rem; opacity: 1; }
+}
+
+.animate-premiumPulse {
+  animation: premiumPulse 3s ease-in-out infinite;
+}
+
+@keyframes premiumPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-template="premium"] * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
