@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { useLazyReniecLookupQuery } from '../../services/guestService';
@@ -12,48 +12,44 @@ interface UseReniecLookupOptions {
 export function useReniecLookup({ watch, setValue }: UseReniecLookupOptions) {
   const { enqueueSnackbar } = useSnackbar();
   const [trigger, { isFetching }] = useLazyReniecLookupQuery();
-
-  // Store callbacks in refs to keep useEffect deps stable
-  const triggerRef = useRef(trigger);
-  triggerRef.current = trigger;
-  const setValueRef = useRef(setValue);
-  setValueRef.current = setValue;
-  const snackbarRef = useRef(enqueueSnackbar);
-  snackbarRef.current = enqueueSnackbar;
-
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const lastDniRef = useRef<string>('');
-
-  const docType = watch('document_type');
-  const docNumber = watch('document_number');
-
-  const doLookup = useCallback(async (dni: string) => {
-    try {
-      const result = await triggerRef.current(dni).unwrap();
-      if (result?.data) {
-        setValueRef.current('first_name', result.data.preNombres);
-        setValueRef.current('last_name', `${result.data.apePaterno} ${result.data.apeMaterno}`);
-        lastDniRef.current = dni;
-        snackbarRef.current('Datos RENIEC cargados', { variant: 'success' });
-      }
-    } catch {
-      snackbarRef.current('No se encontraron datos para este DNI', { variant: 'warning' });
-    }
-  }, []);
+  const lastDniRef = useRef('');
 
   useEffect(() => {
-    clearTimeout(debounceRef.current);
+    const subscription = watch((formValues, { name }) => {
+      if (name !== 'document_number' && name !== 'document_type') return;
 
-    if (docType !== 'dni' || !docNumber || docNumber.length !== 8 || !/^\d{8}$/.test(docNumber)) {
-      return;
-    }
+      clearTimeout(debounceRef.current);
 
-    if (docNumber === lastDniRef.current) return;
+      const docType = formValues.document_type;
+      const docNumber = formValues.document_number ?? '';
 
-    debounceRef.current = setTimeout(() => doLookup(docNumber), 500);
+      if (docType !== 'dni' || docNumber.length !== 8 || !/^\d{8}$/.test(docNumber)) {
+        return;
+      }
 
-    return () => clearTimeout(debounceRef.current);
-  }, [docType, docNumber, doLookup]);
+      if (docNumber === lastDniRef.current) return;
+
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const result = await trigger(docNumber, true).unwrap();
+          if (result?.data) {
+            setValue('first_name', result.data.preNombres);
+            setValue('last_name', `${result.data.apePaterno} ${result.data.apeMaterno}`);
+            lastDniRef.current = docNumber;
+            enqueueSnackbar('Datos RENIEC cargados', { variant: 'success' });
+          }
+        } catch {
+          enqueueSnackbar('No se encontraron datos para este DNI', { variant: 'warning' });
+        }
+      }, 500);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(debounceRef.current);
+    };
+  }, [watch, trigger, setValue, enqueueSnackbar]);
 
   return { isLooking: isFetching };
 }
