@@ -15,7 +15,7 @@ export default function RoomCard({
   template = "signature",
   index,
 }: RoomCardProps) {
-  // Premium: Diamant-inspired — light card, gold accents, rounded
+  // Premium: Diamant-inspired — white card, price in body, gold button
   if (template === "premium") {
     return (
       <div className="group card-luxury">
@@ -31,59 +31,48 @@ export default function RoomCard({
             <div className="w-full h-full bg-gradient-to-br from-sand-100 to-sand-200" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          {/* Price badge */}
-          <div className="absolute top-4 right-4 bg-accent-600/90 backdrop-blur-sm rounded-full px-4 py-1.5">
-            <span className="text-white text-sm font-semibold font-sans">
-              {currency} {roomType.base_price}
-            </span>
-            <span className="text-white/70 text-xs font-sans"> /noche</span>
-          </div>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <h3 className="font-serif text-xl text-primary-900 mb-3 group-hover:text-accent-700 transition-colors">
+          <h3 className="font-serif text-xl text-primary-900 mb-2 group-hover:text-accent-700 transition-colors">
             {roomType.name}
           </h3>
 
+          {roomType.description && (
+            <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed font-sans">
+              {roomType.description}
+            </p>
+          )}
+
           {/* Specs row */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 font-sans mb-4 flex-wrap">
+          <div className="flex items-center gap-4 text-xs text-gray-500 font-sans mb-5 flex-wrap">
             {roomType.max_adults && (
-              <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" />
-                </svg>
-                {roomType.max_adults} huespedes
-              </span>
+              <span>{roomType.max_adults} Huéspedes</span>
             )}
             {roomType.size_sqm && (
-              <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                </svg>
-                {roomType.size_sqm} m²
-              </span>
+              <span>{roomType.size_sqm} m²</span>
             )}
             {roomType.view_type && (
               <span>{VIEW_TYPE_LABELS[roomType.view_type] || roomType.view_type}</span>
             )}
           </div>
 
-          {roomType.description && (
-            <p className="text-sm text-gray-500 mb-5 line-clamp-2 leading-relaxed font-sans">
-              {roomType.description}
-            </p>
-          )}
-
-          <Link
-            href={`/habitaciones/${roomType.id}`}
-            className="inline-flex items-center gap-2 text-accent-600 hover:text-accent-700 text-sm font-medium font-sans transition-colors"
-          >
-            Ver detalle
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </Link>
+          {/* Price + Button */}
+          <div className="flex items-center justify-between pt-5 border-t border-gray-100">
+            <div>
+              <span className="text-accent-600 font-serif text-lg font-semibold">
+                {currency} {roomType.base_price}
+              </span>
+              <span className="text-gray-400 text-xs font-sans"> / noche</span>
+            </div>
+            <Link
+              href={`/habitaciones/${roomType.id}`}
+              className="btn-primary !py-2.5 !px-5 !text-[0.65rem]"
+            >
+              Ver Detalle
+            </Link>
+          </div>
         </div>
       </div>
     );

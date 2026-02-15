@@ -100,11 +100,6 @@ export default async function LandingPage({ params }: Props) {
         />
         {about}
         {rooms}
-        <ExperienceSection
-          key="experience"
-          photos={property.photos}
-          propertyName={property.name}
-        />
         {gallery}
         {amenities}
         {cta}

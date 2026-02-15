@@ -53,7 +53,7 @@ export default async function HotelLayout({ params, children }: Props) {
     <div
       style={cssVars}
       data-template={templateKey}
-      className="min-h-screen flex flex-col bg-sand-50"
+      className={`min-h-screen flex flex-col ${templateKey === "premium" ? "bg-white" : "bg-sand-50"}`}
     >
       <link href={template.googleFontsUrl} rel="stylesheet" />
       <EventInit slug={slug} />

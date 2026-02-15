@@ -260,9 +260,27 @@
   border: 1px solid #eee;
 }
 
-/* --- Section alt bg: white for subtle alternation --- */
+/* --- Section alt bg: subtle off-white --- */
 [data-template="premium"] .section-alt-bg {
-  background-color: #fff;
+  background-color: #fafafa;
+}
+
+/* --- Decorative section frame (Diamant dec-container style) --- */
+[data-template="premium"] .dec-frame {
+  position: relative;
+  border-radius: 10px;
+  padding: 60px;
+}
+[data-template="premium"] .dec-frame::before {
+  content: '';
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  bottom: 30px;
+  left: 30px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  pointer-events: none;
 }
 
 /* --- Divider: gold gradient --- */

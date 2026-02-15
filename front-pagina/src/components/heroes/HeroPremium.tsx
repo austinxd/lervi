@@ -121,7 +121,7 @@ export default function HeroPremium({
         <div style={{ animation: "premiumFadeUp 1s ease-out 1.2s both" }}>
           <Link
             href="/disponibilidad"
-            className="inline-flex items-center justify-center bg-accent-600 hover:bg-accent-700 text-white rounded-full px-10 py-4 font-sans text-sm font-medium uppercase tracking-[0.15em] transition-all duration-300 shadow-lg shadow-accent-600/30 hover:shadow-accent-600/40"
+            className="inline-flex items-center justify-center bg-[#32373c] hover:bg-[#272535] text-white rounded-full px-10 py-4 font-sans text-sm font-medium uppercase tracking-[0.15em] transition-all duration-300"
           >
             Reservar Ahora
           </Link>
