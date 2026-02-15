@@ -177,7 +177,7 @@ OTP_LIFETIME_MINUTES = 10
 
 # ---------- RENIEC ----------
 RENIEC_API_KEY = env("RENIEC_API_KEY", default="")
-RENIEC_API_URL = env("RENIEC_API_URL", default="https://api.casaaustin.pe/api/v1/reniec/lookup/")
+RENIEC_API_URL = env("RENIEC_API_URL", default="https://api.casaaustin.pe/api/v1/reniec/lookup/public/")
 
 # ---------- drf-spectacular ----------
 SPECTACULAR_SETTINGS = {

@@ -25,18 +25,16 @@ class ReniecLookupView(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        headers = {}
         api_key = settings.RENIEC_API_KEY
-        if not api_key:
-            return Response(
-                {"detail": "Servicio RENIEC no configurado."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        if api_key:
+            headers["X-API-Key"] = api_key
 
         try:
-            resp = requests.post(
+            resp = requests.get(
                 settings.RENIEC_API_URL,
-                json={"dni": dni},
-                headers={"X-API-Key": api_key},
+                params={"dni": dni},
+                headers=headers,
                 timeout=10,
             )
             resp.raise_for_status()
