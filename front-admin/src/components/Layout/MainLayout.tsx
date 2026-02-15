@@ -35,7 +35,7 @@ export default function MainLayout() {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Topbar onMenuToggle={() => setMobileOpen(!mobileOpen)} title={getTitle(location.pathname)} />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default' }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, bgcolor: 'background.default', overflow: 'hidden', minWidth: 0 }}>
         <Toolbar />
         <Outlet />
       </Box>
