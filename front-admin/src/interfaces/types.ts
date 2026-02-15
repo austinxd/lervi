@@ -503,3 +503,89 @@ export interface WebFunnelData {
     wow_change: number;
   };
 }
+
+// ---- Billing ----
+export interface BillingConfig {
+  id: string;
+  emission_mode: 'disabled' | 'manual' | 'automatic';
+  ruc: string;
+  razon_social: string;
+  direccion_fiscal: string;
+  proveedor: 'nubefact' | 'efact' | 'custom_webhook';
+  tipo_autenticacion: 'api_key' | 'certificate' | 'oauth2';
+  api_endpoint: string;
+  ambiente: 'produccion' | 'beta';
+  configuracion_tributaria: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyBillingConfig {
+  id: string;
+  property: string;
+  usa_configuracion_propia: boolean;
+  emission_mode: 'inherit' | 'disabled' | 'manual' | 'automatic';
+  proveedor: string;
+  api_endpoint: string;
+  serie_boleta: string;
+  serie_factura: string;
+  establecimiento_codigo: string;
+  punto_emision: string;
+  resolved_config: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: string;
+  unit_price: string;
+  subtotal: string;
+  igv: string;
+  total: string;
+  tipo_afectacion_igv: string;
+  sort_order: number;
+}
+
+export interface InvoiceListItem {
+  id: string;
+  numero_completo: string;
+  document_type: string;
+  status: string;
+  cliente_razon_social: string;
+  cliente_numero_documento: string;
+  total: string;
+  currency: string;
+  fecha_emision: string;
+  property: string;
+  property_name: string;
+  reservation: string | null;
+  reservation_code: string | null;
+  retry_count: number;
+  last_error: string;
+  created_at: string;
+}
+
+export interface InvoiceDetail extends InvoiceListItem {
+  serie: string;
+  correlativo: number;
+  cliente_tipo_documento: string;
+  cliente_direccion: string;
+  cliente_email: string;
+  total_gravado: string;
+  total_exonerado: string;
+  total_inafecto: string;
+  total_descuentos: string;
+  total_igv: string;
+  fecha_vencimiento: string | null;
+  provider_document_url: string;
+  sunat_ticket: string;
+  provider_http_status: number;
+  provider_latency_ms: number;
+  last_attempt_at: string | null;
+  related_invoice: string | null;
+  observaciones: string;
+  items: InvoiceItem[];
+  updated_at: string;
+}

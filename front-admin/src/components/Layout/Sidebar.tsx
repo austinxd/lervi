@@ -10,6 +10,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import TaskIcon from '@mui/icons-material/Task';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Huéspedes', path: '/guests', icon: <PeopleIcon /> },
   { label: 'Tareas', path: '/tasks', icon: <TaskIcon /> },
   { label: 'Pricing', path: '/pricing', icon: <AttachMoneyIcon />, minRole: 'owner' },
+  { label: 'Facturacion', path: '/billing', icon: <ReceiptLongIcon />, minRole: 'owner' },
   { label: 'Automatizaciones', path: '/automations', icon: <AutoFixHighIcon />, minRole: 'manager' },
   { label: 'Usuarios', path: '/users', icon: <PersonIcon />, minRole: 'owner' },
   { label: 'Configuración', path: '/settings', icon: <SettingsIcon />, minRole: 'manager' },

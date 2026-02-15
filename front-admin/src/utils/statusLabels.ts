@@ -114,3 +114,27 @@ export const ROOM_STATUS_TRANSITIONS: Record<string, string[]> = {
   blocked: ['available'],
   maintenance: ['available'],
 };
+
+// ---- Billing ----
+export const INVOICE_STATUS: Record<string, ChipInfo> = {
+  draft: { label: 'Borrador', color: 'default' },
+  pending: { label: 'Pendiente', color: 'warning' },
+  sent: { label: 'Enviada', color: 'info' },
+  accepted: { label: 'Aceptada', color: 'success' },
+  rejected: { label: 'Rechazada', color: 'error' },
+  error: { label: 'Error', color: 'error' },
+  voided: { label: 'Anulada', color: 'default' },
+};
+
+export const INVOICE_DOC_TYPE: Record<string, string> = {
+  boleta: 'Boleta',
+  factura: 'Factura',
+  nota_credito: 'Nota Credito',
+  nota_debito: 'Nota Debito',
+};
+
+export const BILLING_PROVIDER_LABELS: Record<string, string> = {
+  nubefact: 'Nubefact',
+  efact: 'eFact',
+  custom_webhook: 'Webhook personalizado',
+};

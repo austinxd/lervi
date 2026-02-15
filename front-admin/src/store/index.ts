@@ -11,6 +11,7 @@ import { reservationApi } from '../services/reservationService';
 import { roomApi } from '../services/roomService';
 import { roomTypeApi } from '../services/roomTypeService';
 import { taskApi } from '../services/taskService';
+import { billingApi } from '../services/billingService';
 import { userApi } from '../services/userService';
 
 export const store = configureStore({
@@ -27,6 +28,7 @@ export const store = configureStore({
     [pricingApi.reducerPath]: pricingApi.reducer,
     [automationApi.reducerPath]: automationApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
+    [billingApi.reducerPath]: billingApi.reducer,
     [organizationApi.reducerPath]: organizationApi.reducer,
   },
   middleware: (getDefault) =>
@@ -41,6 +43,7 @@ export const store = configureStore({
       taskApi.middleware,
       pricingApi.middleware,
       automationApi.middleware,
+      billingApi.middleware,
       userApi.middleware,
       organizationApi.middleware,
     ),

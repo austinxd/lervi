@@ -28,6 +28,9 @@ import RuleForm from './features/automations/RuleForm';
 import LogList from './features/automations/LogList';
 import UserList from './features/users/UserList';
 import UserForm from './features/users/UserForm';
+import InvoiceList from './features/billing/InvoiceList';
+import InvoiceDetail from './features/billing/InvoiceDetail';
+import BillingConfigPage from './features/billing/BillingConfigPage';
 import OrganizationSettings from './features/settings/OrganizationSettings';
 import PropertySettings from './features/settings/PropertySettings';
 import PropertyDetail from './features/settings/PropertyDetail';
@@ -75,6 +78,10 @@ export default function App() {
                 <Route path="/automations/rules/new" element={<RoleGuard minRole="manager"><RuleForm /></RoleGuard>} />
                 <Route path="/automations/rules/:id/edit" element={<RoleGuard minRole="manager"><RuleForm /></RoleGuard>} />
                 <Route path="/automations/logs" element={<RoleGuard minRole="manager"><LogList /></RoleGuard>} />
+                {/* Billing */}
+                <Route path="/billing" element={<RoleGuard minRole="owner"><InvoiceList /></RoleGuard>} />
+                <Route path="/billing/config" element={<RoleGuard minRole="owner"><BillingConfigPage /></RoleGuard>} />
+                <Route path="/billing/invoices/:id" element={<RoleGuard minRole="owner"><InvoiceDetail /></RoleGuard>} />
                 {/* Users */}
                 <Route path="/users" element={<RoleGuard minRole="owner"><UserList /></RoleGuard>} />
                 <Route path="/users/new" element={<RoleGuard minRole="owner"><UserForm /></RoleGuard>} />
