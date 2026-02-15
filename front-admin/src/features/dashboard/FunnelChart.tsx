@@ -14,17 +14,8 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 const BAR_COLORS = ['#1565C0', '#1E88E5', '#42A5F5', '#2E7D32'];
-
-const STEP_HEIGHT = 34;
-const DROP_GAP = 20;
-const SVG_WIDTH = 500;
-const MAX_BAR_WIDTH = 420;
-const CENTER_X = SVG_WIDTH / 2;
-const MIN_WIDTH_PCT = 5;
-const TEXT_FIT_THRESHOLD = 160;
 const LOW_VOLUME_THRESHOLD = 30;
-
-// Benchmark: typical search-to-booking conversion for the platform
+const MIN_WIDTH_PCT = 6;
 const PLATFORM_BENCHMARK_PCT = 3.5;
 
 interface FunnelChartProps {
@@ -53,26 +44,20 @@ export default function FunnelChart({ funnel, placeholder = false, periodLabel }
     dropOffs.push(current > 0 ? Math.round(((current - next) / current) * 100) : 0);
   }
 
-  // Conversion: search_dates → booking_confirmed
   const searchSessions = funnel.find((s) => s.step === 'search_dates')?.sessions ?? 0;
   const confirmedSessions = funnel.find((s) => s.step === 'booking_confirmed')?.sessions ?? 0;
-  const conversionPct = searchSessions > 0
-    ? (confirmedSessions / searchSessions * 100)
-    : 0;
+  const conversionPct = searchSessions > 0 ? (confirmedSessions / searchSessions * 100) : 0;
 
-  const totalHeight = steps.reduce((acc, _, i) => {
-    if (i < steps.length - 1) return acc + STEP_HEIGHT + DROP_GAP;
-    return acc + STEP_HEIGHT;
-  }, 0);
+  const noData = !hasData;
 
   return (
     <Card>
-      <CardContent sx={{ pb: '12px !important' }}>
-        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.25 }}>
+      <CardContent sx={{ pb: '12px !important', pt: 1.5 }}>
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.25 }}>
           Intencion del usuario
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
-          Embudo basado en sesiones web{periodLabel ? ` — ${periodLabel}` : ''}
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block', lineHeight: 1.3 }}>
+          Sesiones web{periodLabel ? ` — ${periodLabel}` : ''}
           {lowVolume && hasData && ' · Datos iniciales'}
         </Typography>
 
@@ -82,92 +67,89 @@ export default function FunnelChart({ funnel, placeholder = false, periodLabel }
           </Typography>
         )}
 
-        <svg
-          width="100%"
-          viewBox={`0 0 ${SVG_WIDTH} ${totalHeight}`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {steps.map((step, i) => {
-            const y = i * (STEP_HEIGHT + DROP_GAP);
-            const barWidth = (step.widthPct / 100) * MAX_BAR_WIDTH;
-            const x = CENTER_X - barWidth / 2;
-            const noData = !hasData;
-
-            const displayText = hasData
-              ? `${step.label} (${step.sessions})`
-              : step.label;
-
-            const textInside = barWidth >= TEXT_FIT_THRESHOLD;
-
-            // Drop-off color: neutral when low volume, red only with enough data
-            const dropColor = (pct: number) => {
-              if (lowVolume) return '#90A4AE'; // blue-grey neutral
-              return pct > 50 ? '#D32F2F' : '#9E9E9E';
-            };
-
-            return (
-              <g key={step.step}>
-                <rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={STEP_HEIGHT}
-                  rx={5}
-                  fill={step.color}
-                  opacity={noData ? 0.12 : lowVolume ? 0.7 : 1}
-                />
-
-                {textInside ? (
-                  <text
-                    x={x + 12}
-                    y={y + STEP_HEIGHT / 2 + 4.5}
-                    textAnchor="start"
-                    fontSize={12}
-                    fontWeight={600}
-                    fill={noData ? '#9E9E9E' : '#fff'}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {steps.map((step, i) => (
+            <Box key={step.step}>
+              {/* Bar */}
+              <Box
+                sx={{
+                  width: `${step.widthPct}%`,
+                  height: 28,
+                  bgcolor: step.color,
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 1.5,
+                  opacity: noData ? 0.12 : lowVolume ? 0.75 : 1,
+                  mx: 'auto',
+                  position: 'relative',
+                }}
+              >
+                {step.widthPct >= 35 ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: noData ? '#9E9E9E' : '#fff',
+                      fontWeight: 600,
+                      fontSize: 11,
+                      whiteSpace: 'nowrap',
+                      lineHeight: 1,
+                    }}
                   >
-                    {displayText}
-                  </text>
-                ) : (
-                  <text
-                    x={x + barWidth + 8}
-                    y={y + STEP_HEIGHT / 2 + 4.5}
-                    textAnchor="start"
-                    fontSize={11}
-                    fontWeight={600}
-                    fill={noData ? '#9E9E9E' : '#616161'}
-                  >
-                    {displayText}
-                  </text>
-                )}
+                    {hasData ? `${step.label} (${step.sessions})` : step.label}
+                  </Typography>
+                ) : null}
+              </Box>
 
-                {i < steps.length - 1 && hasData && dropOffs[i] > 0 && (
-                  <text
-                    x={CENTER_X}
-                    y={y + STEP_HEIGHT + DROP_GAP / 2 + 4}
-                    textAnchor="middle"
-                    fontSize={11}
-                    fontWeight={500}
-                    fill={dropColor(dropOffs[i])}
-                  >
-                    ▼ -{dropOffs[i]}%
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+              {/* Label outside bar when too narrow */}
+              {step.widthPct < 35 && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: noData ? '#bdbdbd' : '#616161',
+                    fontWeight: 600,
+                    fontSize: 11,
+                    display: 'block',
+                    textAlign: 'center',
+                    mt: '1px',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {hasData ? `${step.label} (${step.sessions})` : step.label}
+                </Typography>
+              )}
+
+              {/* Drop-off */}
+              {i < steps.length - 1 && hasData && dropOffs[i] > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    textAlign: 'center',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    color: lowVolume ? '#90A4AE' : dropOffs[i] > 50 ? '#D32F2F' : '#bdbdbd',
+                    lineHeight: 1,
+                    py: '2px',
+                  }}
+                >
+                  ▼ -{dropOffs[i]}%
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
 
         {/* Benchmark */}
         {hasData && searchSessions > 0 && (
-          <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary">
-              Busqueda → Reserva: {conversionPct.toFixed(1)}%
-              {!lowVolume && (
-                <> · Promedio Lervi: {PLATFORM_BENCHMARK_PCT}%</>
-              )}
-            </Typography>
-          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 1, pt: 0.75, borderTop: '1px solid', borderColor: 'divider', fontSize: 11 }}
+          >
+            Busqueda → Reserva: {conversionPct.toFixed(1)}%
+            {!lowVolume && <> · Promedio Lervi: {PLATFORM_BENCHMARK_PCT}%</>}
+          </Typography>
         )}
       </CardContent>
     </Card>
