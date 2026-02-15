@@ -116,7 +116,11 @@ export default function WebFunnelSection() {
               {/* Intención del usuario: funnel + insights */}
               <Grid container spacing={2}>
                 <Grid item xs={12} md={tier === 'collecting' ? 12 : 7}>
-                  <FunnelChart funnel={data.funnel} placeholder={tier === 'collecting'} />
+                  <FunnelChart
+                    funnel={data.funnel}
+                    placeholder={tier === 'collecting'}
+                    periodLabel={PERIOD_OPTIONS.find((o) => o.value === period)?.label}
+                  />
                 </Grid>
                 {tier !== 'collecting' && (
                   <Grid item xs={12} md={5}>
