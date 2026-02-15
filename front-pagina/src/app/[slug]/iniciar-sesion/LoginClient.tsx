@@ -11,6 +11,7 @@ import {
   guestActivate,
   guestVerifyEmail,
   guestIdentityData,
+  reniecLookup,
 } from "@/lib/api";
 import { setGuestSession } from "@/lib/guest-auth";
 import { track, setGuestId, EVENT_NAMES } from "@/lib/events";
@@ -109,6 +110,15 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
           setInfo("Encontramos una cuenta asociada a este documento.");
           break;
         case "register":
+          if (docType === "dni" && docNumber.length === 8) {
+            reniecLookup(slug, docNumber).then((data) => {
+              if (data) {
+                setFirstName(data.preNombres);
+                setLastName(`${data.apePaterno} ${data.apeMaterno}`);
+                setNationality("PE");
+              }
+            });
+          }
           setStep("register");
           break;
         case "recognized":
@@ -126,6 +136,15 @@ export default function LoginClient({ slug, defaultCountry = "PE" }: Props) {
           break;
         case "new":
         default:
+          if (docType === "dni" && docNumber.length === 8) {
+            reniecLookup(slug, docNumber).then((data) => {
+              if (data) {
+                setFirstName(data.preNombres);
+                setLastName(`${data.apePaterno} ${data.apeMaterno}`);
+                setNationality("PE");
+              }
+            });
+          }
           setStep("register");
           break;
       }

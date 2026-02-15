@@ -124,4 +124,9 @@ urlpatterns = [
         EventIngestView.as_view(),
         name="public-events",
     ),
+    path(
+        "<slug:org_slug>/reniec-lookup/",
+        views.PublicReniecLookupView.as_view(),
+        name="public-reniec-lookup",
+    ),
 ]

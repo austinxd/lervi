@@ -3,6 +3,7 @@ import uuid
 from datetime import date, timedelta
 
 import jwt
+import requests as http_requests
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Min, Q
@@ -1470,3 +1471,45 @@ class ContactView(APIView):
             {"message": "Mensaje enviado. Nos pondremos en contacto pronto."},
             status=status.HTTP_200_OK,
         )
+
+
+class PublicReniecLookupView(APIView):
+    """Consulta RENIEC pública para autocompletar registro de huéspedes."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, org_slug):
+        dni = request.query_params.get("dni", "")
+        if not dni.isdigit() or len(dni) != 8:
+            return Response(
+                {"detail": "El DNI debe tener exactamente 8 dígitos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        api_key = settings.RENIEC_API_KEY
+        if not api_key:
+            return Response(
+                {"detail": "Servicio RENIEC no configurado."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            resp = http_requests.post(
+                settings.RENIEC_API_URL,
+                json={"dni": dni},
+                headers={"X-API-Key": api_key, "Content-Type": "application/json"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", {})
+            return Response({
+                "preNombres": data.get("preNombres", ""),
+                "apePaterno": data.get("apePaterno", ""),
+                "apeMaterno": data.get("apeMaterno", ""),
+            })
+        except http_requests.RequestException as exc:
+            logger.warning("RENIEC lookup failed for DNI %s: %s", dni, exc)
+            return Response(
+                {"detail": "No se pudo consultar RENIEC."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )

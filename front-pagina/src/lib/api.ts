@@ -288,6 +288,19 @@ export async function getGuestProfile(
   return res.json();
 }
 
+export async function reniecLookup(
+  slug: string,
+  dni: string
+): Promise<{ preNombres: string; apePaterno: string; apeMaterno: string } | null> {
+  try {
+    const res = await fetch(`${PUBLIC_API}/${slug}/reniec-lookup/?dni=${dni}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
