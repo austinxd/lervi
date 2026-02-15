@@ -11,7 +11,10 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
+import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
 import { DOCUMENT_TYPE_OPTIONS, DOCUMENT_TYPE_LABELS, NATIONALITY_OPTIONS } from '../../utils/statusLabels';
+import { useReniecLookup } from './useReniecLookup';
 
 export default function GuestList() {
   const navigate = useNavigate();
@@ -25,6 +28,8 @@ export default function GuestList() {
   const [createGuest, { isLoading: creating }] = useCreateGuestMutation();
   const { register, handleSubmit, reset, control, watch, setValue } = useForm<Partial<Guest>>();
   const watchDocType = watch('document_type');
+
+  const { isLooking } = useReniecLookup({ watch, setValue });
 
   useEffect(() => {
     if (watchDocType === 'dni') {
@@ -84,10 +89,14 @@ export default function GuestList() {
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <TextField {...register('first_name')} label="Nombre" fullWidth required />
+                <Controller name="first_name" control={control} defaultValue="" render={({ field }) => (
+                  <TextField {...field} label="Nombre" fullWidth required />
+                )} />
               </Grid>
               <Grid item xs={6}>
-                <TextField {...register('last_name')} label="Apellido" fullWidth required />
+                <Controller name="last_name" control={control} defaultValue="" render={({ field }) => (
+                  <TextField {...field} label="Apellido" fullWidth required />
+                )} />
               </Grid>
               <Grid item xs={6}>
                 <TextField {...register('email')} label="Email" type="email" fullWidth />
@@ -104,7 +113,18 @@ export default function GuestList() {
                 )} />
               </Grid>
               <Grid item xs={6}>
-                <TextField {...register('document_number')} label="Nro. documento" fullWidth />
+                <Controller name="document_number" control={control} defaultValue="" render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Nro. documento"
+                    fullWidth
+                    InputProps={{
+                      endAdornment: isLooking ? (
+                        <InputAdornment position="end"><CircularProgress size={20} /></InputAdornment>
+                      ) : null,
+                    }}
+                  />
+                )} />
               </Grid>
               <Grid item xs={6}>
                 <Controller name="nationality" control={control} defaultValue="" render={({ field }) => (

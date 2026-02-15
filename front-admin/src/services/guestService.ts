@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '../api/baseQuery';
-import type { Guest, GuestNote, PaginatedResponse } from '../interfaces/types';
+import type { Guest, GuestNote, PaginatedResponse, ReniecResponse } from '../interfaces/types';
 
 export const guestApi = createApi({
   reducerPath: 'guestApi',
@@ -31,6 +31,9 @@ export const guestApi = createApi({
       query: (id) => ({ url: `/guests/${id}/`, method: 'DELETE' }),
       invalidatesTags: ['Guest'],
     }),
+    reniecLookup: builder.query<ReniecResponse, string>({
+      query: (dni) => ({ url: `/guests/reniec-lookup/?dni=${dni}` }),
+    }),
   }),
 });
 
@@ -38,4 +41,5 @@ export const {
   useGetGuestsQuery, useGetGuestQuery,
   useCreateGuestMutation, useUpdateGuestMutation,
   useAddGuestNoteMutation, useDeleteGuestMutation,
+  useLazyReniecLookupQuery,
 } = guestApi;

@@ -189,6 +189,19 @@ export interface Guest {
   updated_at?: string;
 }
 
+// ---- RENIEC ----
+export interface ReniecResponse {
+  source: string;
+  data: {
+    dni: string;
+    preNombres: string;
+    apePaterno: string;
+    apeMaterno: string;
+    feNacimiento?: string;
+    sexo?: string;
+  };
+}
+
 // ---- Reservation ----
 export type OperationalStatus = 'incomplete' | 'pending' | 'confirmed' | 'check_in' | 'check_out' | 'cancelled' | 'no_show';
 export type FinancialStatus = 'pending_payment' | 'partial' | 'paid' | 'partial_refund' | 'refunded';

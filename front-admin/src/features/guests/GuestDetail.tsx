@@ -9,8 +9,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import { useForm, Controller } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
+import InputAdornment from '@mui/material/InputAdornment';
 import { DOCUMENT_TYPE_OPTIONS, DOCUMENT_TYPE_LABELS, NATIONALITY_OPTIONS } from '../../utils/statusLabels';
 import { useGetGuestQuery, useUpdateGuestMutation, useAddGuestNoteMutation, useDeleteGuestMutation } from '../../services/guestService';
+import { useReniecLookup } from './useReniecLookup';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { formatDateTime } from '../../utils/formatters';
 import type { Guest } from '../../interfaces/types';
@@ -29,6 +31,8 @@ export default function GuestDetail() {
 
   const { register, handleSubmit, reset, control, watch, setValue } = useForm<Partial<Guest>>();
   const watchDocType = watch('document_type');
+
+  const { isLooking } = useReniecLookup({ watch, setValue });
 
   useEffect(() => {
     if (watchDocType === 'dni') {
@@ -118,8 +122,16 @@ export default function GuestDetail() {
               {editing ? (
                 <form onSubmit={handleSubmit(onSave)}>
                   <Grid container spacing={2}>
-                    <Grid item xs={6}><TextField {...register('first_name')} label="Nombre" fullWidth /></Grid>
-                    <Grid item xs={6}><TextField {...register('last_name')} label="Apellido" fullWidth /></Grid>
+                    <Grid item xs={6}>
+                      <Controller name="first_name" control={control} defaultValue="" render={({ field }) => (
+                        <TextField {...field} label="Nombre" fullWidth />
+                      )} />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Controller name="last_name" control={control} defaultValue="" render={({ field }) => (
+                        <TextField {...field} label="Apellido" fullWidth />
+                      )} />
+                    </Grid>
                     <Grid item xs={6}><TextField {...register('email')} label="Email" fullWidth /></Grid>
                     <Grid item xs={6}><TextField {...register('phone')} label="Teléfono" fullWidth /></Grid>
                     <Grid item xs={6}>
@@ -130,7 +142,20 @@ export default function GuestDetail() {
                         </TextField>
                       )} />
                     </Grid>
-                    <Grid item xs={6}><TextField {...register('document_number')} label="Nro. documento" fullWidth /></Grid>
+                    <Grid item xs={6}>
+                      <Controller name="document_number" control={control} defaultValue="" render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Nro. documento"
+                          fullWidth
+                          InputProps={{
+                            endAdornment: isLooking ? (
+                              <InputAdornment position="end"><CircularProgress size={20} /></InputAdornment>
+                            ) : null,
+                          }}
+                        />
+                      )} />
+                    </Grid>
                     <Grid item xs={6}>
                       <Controller name="nationality" control={control} render={({ field }) => (
                         <TextField {...field} select label="Nacionalidad" fullWidth>

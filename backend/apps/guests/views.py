@@ -1,4 +1,8 @@
-from rest_framework import status, viewsets
+import logging
+
+import requests
+from django.conf import settings
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -6,6 +10,43 @@ from apps.common.mixins import TenantQuerySetMixin
 
 from .models import Guest, GuestNote
 from .serializers import GuestListSerializer, GuestNoteSerializer, GuestSerializer
+
+logger = logging.getLogger(__name__)
+
+
+class ReniecLookupView(generics.GenericAPIView):
+    """Proxy para consulta RENIEC. Solo usuarios autenticados."""
+
+    def get(self, request):
+        dni = request.query_params.get("dni", "")
+        if not dni.isdigit() or len(dni) != 8:
+            return Response(
+                {"detail": "El DNI debe tener exactamente 8 dígitos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        api_key = settings.RENIEC_API_KEY
+        if not api_key:
+            return Response(
+                {"detail": "Servicio RENIEC no configurado."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            resp = requests.post(
+                settings.RENIEC_API_URL,
+                json={"dni": dni},
+                headers={"X-API-Key": api_key},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return Response(resp.json())
+        except requests.RequestException as exc:
+            logger.warning("RENIEC lookup failed for DNI %s: %s", dni, exc)
+            return Response(
+                {"detail": "No se pudo consultar RENIEC."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
 
 class GuestViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):

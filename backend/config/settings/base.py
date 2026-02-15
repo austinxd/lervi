@@ -175,6 +175,10 @@ OTP_COOLDOWN_SECONDS = 60
 OTP_MAX_PER_HOUR = 5
 OTP_LIFETIME_MINUTES = 10
 
+# ---------- RENIEC ----------
+RENIEC_API_KEY = env("RENIEC_API_KEY", default="")
+RENIEC_API_URL = env("RENIEC_API_URL", default="https://api.casaaustin.pe/api/v1/reniec/lookup/")
+
 # ---------- drf-spectacular ----------
 SPECTACULAR_SETTINGS = {
     "TITLE": "Lervi API",
