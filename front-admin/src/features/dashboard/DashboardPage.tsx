@@ -81,12 +81,7 @@ export default function DashboardPage() {
       {tab === 0 && (
         <>
           {/* Status bar */}
-          <StatusBar
-            alerts={alerts}
-            inHouse={reservations?.in_house ?? 0}
-            urgentTasks={tasks?.urgent ?? 0}
-            pendingReservations={pendingReservations}
-          />
+          <StatusBar alerts={alerts} />
 
           {/* KPI hero cards */}
           <KpiHeroCards

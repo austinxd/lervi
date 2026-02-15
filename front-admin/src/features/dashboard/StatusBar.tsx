@@ -3,12 +3,9 @@ import type { DashboardAlert } from '../../interfaces/types';
 
 interface StatusBarProps {
   alerts: DashboardAlert[];
-  inHouse: number;
-  urgentTasks: number;
-  pendingReservations: number;
 }
 
-export default function StatusBar({ alerts, inHouse, urgentTasks, pendingReservations }: StatusBarProps) {
+export default function StatusBar({ alerts }: StatusBarProps) {
   const hasError = alerts.some((a) => a.severity === 'error');
   const hasWarning = alerts.some((a) => a.severity === 'warning');
 
@@ -17,21 +14,19 @@ export default function StatusBar({ alerts, inHouse, urgentTasks, pendingReserva
 
   if (hasError) {
     bgcolor = '#D32F2F';
-    statusLabel = 'Atención requerida';
+    statusLabel = 'Atencion requerida';
   } else if (hasWarning) {
     bgcolor = '#ED6C02';
-    statusLabel = 'Requiere atención';
+    statusLabel = 'Requiere atencion';
   } else {
     bgcolor = '#2E7D32';
-    statusLabel = 'Operación estable';
+    statusLabel = 'Operacion estable';
   }
 
   const parts = [
     statusLabel,
-    `${inHouse} huésped${inHouse !== 1 ? 'es' : ''} hospedado${inHouse !== 1 ? 's' : ''}`,
-    urgentTasks > 0 ? `${urgentTasks} tarea${urgentTasks !== 1 ? 's' : ''} urgente${urgentTasks !== 1 ? 's' : ''}` : null,
-    pendingReservations > 0 ? `${pendingReservations} reserva${pendingReservations !== 1 ? 's' : ''} pendiente${pendingReservations !== 1 ? 's' : ''}` : null,
-  ].filter(Boolean);
+    ...alerts.map((a) => a.message),
+  ];
 
   return (
     <Paper sx={{ bgcolor, color: '#fff', px: 3, py: 1.5, mb: 3, borderRadius: 2 }} elevation={0}>

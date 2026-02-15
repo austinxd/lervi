@@ -131,16 +131,37 @@ class TodayView(APIView):
 
         # --- Alerts ---
         alerts = []
-        overdue_checkins = res_qs.filter(
+
+        # Check-ins today without available room
+        todays_checkins = res_qs.filter(
             check_in_date=today,
             operational_status="confirmed",
-        ).count()
-        if overdue_checkins:
+            room__isnull=True,
+        )
+        checkins_no_room = 0
+        for res in todays_checkins:
+            available_rooms = Room.objects.filter(
+                property=res.property,
+                room_types=res.room_type,
+                status="available",
+            ).exclude(
+                pk__in=Reservation.objects.filter(
+                    property=res.property,
+                    operational_status__in=["confirmed", "check_in"],
+                    check_in_date__lt=res.check_out_date,
+                    check_out_date__gt=res.check_in_date,
+                    room__isnull=False,
+                ).exclude(pk=res.pk).values_list("room_id", flat=True)
+            )
+            if not available_rooms.exists():
+                checkins_no_room += 1
+
+        if checkins_no_room:
             alerts.append({
-                "type": "overdue_checkin",
-                "severity": "warning",
-                "message": f"{overdue_checkins} check-in(s) pendiente(s) de hoy",
-                "count": overdue_checkins,
+                "type": "checkin_no_room",
+                "severity": "error",
+                "message": f"{checkins_no_room} check-in(s) hoy sin habitacion disponible",
+                "count": checkins_no_room,
             })
 
         dirty_rooms = room_status_counts.get("dirty", 0)
