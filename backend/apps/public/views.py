@@ -636,6 +636,14 @@ class ReservationLookupView(APIView):
             reservation.voucher_image.url if reservation.voucher_image else None
         )
         response_data["operational_status"] = reservation.operational_status
+        response_data["financial_status"] = reservation.financial_status
+
+        total_paid = sum(
+            p.amount for p in reservation.payments.filter(status="completed")
+        )
+        response_data["total_paid"] = str(total_paid)
+        response_data["amount_due"] = str(max(reservation.total_amount - total_paid, 0))
+
         return Response(response_data)
 
 

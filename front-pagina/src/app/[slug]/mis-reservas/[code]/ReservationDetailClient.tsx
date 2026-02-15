@@ -504,13 +504,29 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                   </div>
 
                   {/* Total */}
-                  <div className="bg-sand-50 rounded-lg p-4 mb-6">
+                  <div className="bg-sand-50 rounded-lg p-4 mb-6 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500 font-sans">Total de la reserva</span>
                       <span className="font-serif text-2xl font-bold text-primary-900">
                         {reservation.currency} {reservation.total_amount}
                       </span>
                     </div>
+                    {parseFloat(reservation.total_paid) > 0 && (
+                      <div className="flex items-center justify-between border-t border-sand-200 pt-2">
+                        <span className="text-sm text-green-600 font-sans font-medium">Pagado</span>
+                        <span className="text-sm text-green-600 font-semibold">
+                          {reservation.currency} {reservation.total_paid}
+                        </span>
+                      </div>
+                    )}
+                    {parseFloat(reservation.amount_due) > 0 && (
+                      <div className="flex items-center justify-between border-t border-sand-200 pt-2">
+                        <span className="text-sm text-red-600 font-sans font-medium">Por pagar</span>
+                        <span className="text-sm text-red-600 font-semibold">
+                          {reservation.currency} {reservation.amount_due}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Importante: depositar */}
@@ -743,6 +759,27 @@ export default function ReservationDetailClient({ slug, code }: Props) {
                     {reservation.currency} {reservation.total_amount}
                   </span>
                 </div>
+                {parseFloat(reservation.total_paid) > 0 && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-green-600 font-medium">Pagado</span>
+                    <span className="text-green-600 font-medium">
+                      {reservation.currency} {reservation.total_paid}
+                    </span>
+                  </div>
+                )}
+                {parseFloat(reservation.amount_due) > 0 && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-red-600 font-medium">Por pagar</span>
+                    <span className="text-red-600 font-medium">
+                      {reservation.currency} {reservation.amount_due}
+                    </span>
+                  </div>
+                )}
+                {parseFloat(reservation.amount_due) <= 0 && parseFloat(reservation.total_paid) > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-1 text-center">
+                    <span className="text-green-700 text-xs font-semibold">Pagado completo</span>
+                  </div>
+                )}
               </div>
             </div>
 

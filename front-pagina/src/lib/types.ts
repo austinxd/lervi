@@ -192,6 +192,9 @@ export interface BankAccount {
 export interface ReservationLookup extends ReservationConfirmation {
   voucher_image: string | null;
   operational_status: string;
+  financial_status: string;
+  total_paid: string;
+  amount_due: string;
 }
 
 export interface ReservationRequest {
