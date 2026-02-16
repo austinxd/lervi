@@ -50,7 +50,7 @@ export default function Header({ propertyName, logo, template = "signature", slu
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [guestName, setGuestName] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(template === "premium");
   const baseStyles = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.signature;
 
   // Premium: switch to light header when scrolled past hero
@@ -69,9 +69,17 @@ export default function Header({ propertyName, logo, template = "signature", slu
 
   useEffect(() => {
     if (template !== "premium") return;
+
+    // If no hero behind header (internal pages), stay in "scrolled" (light) state
+    const hero = document.querySelector("[data-premium-hero]");
+    if (!hero) return;
+
+    // Landing page: transparent header over the dark hero
     const handleScroll = () => {
       setScrolled(window.scrollY > 100);
     };
+    // Immediately check — at top of page, show transparent header
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [template]);

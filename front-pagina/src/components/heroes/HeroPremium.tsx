@@ -33,7 +33,7 @@ export default function HeroPremium({
   }, []);
 
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section data-premium-hero className="relative h-screen flex items-center justify-center overflow-hidden -mt-20">
       {/* Background image with parallax */}
       {heroImage ? (
         <div

@@ -55,6 +55,7 @@ export default function BookingSearchBar() {
                   setCheckIn(e.target.value);
                   if (checkOut && e.target.value >= checkOut) setCheckOut("");
                 }}
+                style={{ colorScheme: "light" }}
                 className="w-full pl-14 pr-3 py-2.5 text-primary-900 font-medium font-sans text-sm border border-gray-200 rounded-[0.5rem] focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500 transition-colors bg-white cursor-pointer"
               />
               {checkIn && (
@@ -86,6 +87,7 @@ export default function BookingSearchBar() {
                 value={checkOut}
                 min={checkIn || today}
                 onChange={(e) => setCheckOut(e.target.value)}
+                style={{ colorScheme: "light" }}
                 className="w-full pl-14 pr-3 py-2.5 text-primary-900 font-medium font-sans text-sm border border-gray-200 rounded-[0.5rem] focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500 transition-colors bg-white cursor-pointer"
               />
               {checkOut && (
