@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getGuestToken, getGuestName, clearGuestSession } from "@/lib/guest-auth";
 
 interface HeaderProps {
@@ -48,6 +48,7 @@ const TEMPLATE_STYLES: Record<string, {
 
 export default function Header({ propertyName, logo, template = "signature", slug }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [guestName, setGuestName] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(template === "premium");
@@ -72,7 +73,10 @@ export default function Header({ propertyName, logo, template = "signature", slu
 
     // If no hero behind header (internal pages), stay in "scrolled" (light) state
     const hero = document.querySelector("[data-premium-hero]");
-    if (!hero) return;
+    if (!hero) {
+      setScrolled(true);
+      return;
+    }
 
     // Landing page: transparent header over the dark hero
     const handleScroll = () => {
@@ -82,7 +86,7 @@ export default function Header({ propertyName, logo, template = "signature", slu
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [template]);
+  }, [template, pathname]);
 
   const handleLogout = () => {
     clearGuestSession();
