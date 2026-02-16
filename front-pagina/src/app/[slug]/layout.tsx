@@ -58,7 +58,7 @@ export default async function HotelLayout({ params, children }: Props) {
       <link href={template.googleFontsUrl} rel="stylesheet" />
       <EventInit slug={slug} />
       <Header propertyName={org.name} logo={org.logo} template={templateKey} slug={slug} />
-      <main className="flex-1">{children}</main>
+      <main className={`flex-1 ${templateKey === "premium" ? "pt-20" : ""}`}>{children}</main>
       <Footer org={org} template={templateKey} />
     </div>
   );

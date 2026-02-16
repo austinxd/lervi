@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function BookingSearchBar() {
@@ -12,6 +12,9 @@ export default function BookingSearchBar() {
   const [children, setChildren] = useState(0);
   const [guestOpen, setGuestOpen] = useState(false);
 
+  const checkInRef = useRef<HTMLInputElement>(null);
+  const checkOutRef = useRef<HTMLInputElement>(null);
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (checkIn) params.set("check_in", checkIn);
@@ -21,7 +24,15 @@ export default function BookingSearchBar() {
     router.push(`/disponibilidad?${params.toString()}`);
   };
 
-  const totalGuests = adults + children;
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    // showPicker() is supported in Chrome 99+, Safari 16+, Firefox 101+
+    if (typeof el.showPicker === "function") {
+      try { el.showPicker(); } catch { /* ignore if blocked */ }
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return null;
@@ -41,13 +52,17 @@ export default function BookingSearchBar() {
             <label className="block text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-gray-400 font-sans mb-2">
               Llegada
             </label>
-            <div className="relative">
+            <div
+              className="relative cursor-pointer"
+              onClick={() => openPicker(checkInRef)}
+            >
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-[0.5rem] bg-accent-50 flex items-center justify-center pointer-events-none">
                 <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                 </svg>
               </div>
               <input
+                ref={checkInRef}
                 type="date"
                 value={checkIn}
                 min={today}
@@ -76,13 +91,17 @@ export default function BookingSearchBar() {
                 </span>
               )}
             </label>
-            <div className="relative">
+            <div
+              className="relative cursor-pointer"
+              onClick={() => openPicker(checkOutRef)}
+            >
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-[0.5rem] bg-accent-50 flex items-center justify-center pointer-events-none">
                 <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                 </svg>
               </div>
               <input
+                ref={checkOutRef}
                 type="date"
                 value={checkOut}
                 min={checkIn || today}
